@@ -22,7 +22,7 @@ export async function GET(
     if (id.startsWith('doctor_')) {
       const doctorVisitId = id.replace('doctor_', '');
       
-      const event = await DoctorVisit.findOne({ _id: doctorVisitId, userId }).lean() as any;
+      const event = await DoctorVisit.findOne({ _id: doctorVisitId, userId }).lean() as Record<string, unknown>;
 
       if (!event) {
         return NextResponse.json({ error: 'Event not found' }, { status: 404 });
