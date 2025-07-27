@@ -1,0 +1,435 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import Link from 'next/link';
+import { 
+  Activity, 
+  CreditCard, 
+  Stethoscope, 
+  Scale, 
+  Plus, 
+  TrendingUp,
+  Calendar,
+  FileText,
+  Heart,
+  Target
+} from 'lucide-react';
+
+interface HealthDataSummary {
+  bloodPressure: {
+    latest?: {
+      systolic: number;
+      diastolic: number;
+      pulse: number;
+      date: string;
+      category: string;
+    };
+    total: number;
+    trend: 'up' | 'down' | 'stable';
+  };
+  bloodWork: {
+    latest?: {
+      date: string;
+      tests: number;
+    };
+    total: number;
+    trend: 'up' | 'down' | 'stable';
+  };
+  weight: {
+    latest?: {
+      weight: number;
+      bmi: number;
+      date: string;
+    };
+    total: number;
+    trend: 'up' | 'down' | 'stable';
+  };
+  doctorVisits: {
+    upcoming: number;
+    recent: number;
+    total: number;
+  };
+}
+
+export default function HealthDataPage() {
+  const [summary, setSummary] = useState<HealthDataSummary>({
+    bloodPressure: { total: 0, trend: 'stable' },
+    bloodWork: { total: 0, trend: 'stable' },
+    weight: { total: 0, trend: 'stable' },
+    doctorVisits: { upcoming: 0, recent: 0, total: 0 }
+  });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchHealthDataSummary();
+  }, []);
+
+  const fetchHealthDataSummary = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Fetch blood pressure summary
+      const bpResponse = await fetch('/api/blood-pressure?limit=1');
+      const bpData = bpResponse.ok ? await bpResponse.json() : { data: [] };
+      
+      // Fetch weight summary
+      const weightResponse = await fetch('/api/weight?limit=1');
+      const weightData = weightResponse.ok ? await weightResponse.json() : { data: [] };
+      
+      // Fetch blood work summary
+      const bwResponse = await fetch('/api/blood-work?limit=1');
+      const bwData = bwResponse.ok ? await bwResponse.json() : { data: [] };
+      
+      // Fetch doctor visits summary
+      const dvResponse = await fetch('/api/doctor-visits');
+      const dvData = dvResponse.ok ? await dvResponse.json() : { data: [] };
+      
+      const now = new Date();
+      const upcomingVisits = dvData.data?.filter((visit: any) => {
+        const visitDate = new Date(visit.visitDate);
+        return visit.status === 'scheduled' && visitDate >= now;
+      }) || [];
+      
+      const recentVisits = dvData.data?.filter((visit: any) => {
+        const visitDate = new Date(visit.visitDate);
+        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        return visitDate >= thirtyDaysAgo;
+      }) || [];
+
+      setSummary({
+        bloodPressure: {
+          latest: bpData.data?.[0] ? {
+            systolic: bpData.data[0].systolic || 0,
+            diastolic: bpData.data[0].diastolic || 0,
+            pulse: bpData.data[0].pulse || 0,
+            date: bpData.data[0].date,
+            category: bpData.data[0].category || 'normal'
+          } : undefined,
+          total: bpData.data?.length || 0,
+          trend: 'stable'
+        },
+        weight: {
+          latest: weightData.data?.[0] ? {
+            weight: weightData.data[0].weight || 0,
+            bmi: weightData.data[0].bmi || 0,
+            date: weightData.data[0].date
+          } : undefined,
+          total: weightData.data?.length || 0,
+          trend: 'stable'
+        },
+        bloodWork: {
+          latest: bwData.data?.[0] ? {
+            date: bwData.data[0].date,
+            tests: bwData.data[0].tests?.length || 0
+          } : undefined,
+          total: bwData.data?.length || 0,
+          trend: 'stable'
+        },
+        doctorVisits: {
+          upcoming: upcomingVisits.length,
+          recent: recentVisits.length,
+          total: dvData.data?.length || 0
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching health data summary:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getTrendColor = (trend: string) => {
+    switch (trend) {
+      case 'up': return 'text-red-500';
+      case 'down': return 'text-green-500';
+      default: return 'text-gray-500';
+    }
+  };
+
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'normal': return 'bg-green-100 text-green-800';
+      case 'elevated': return 'bg-yellow-100 text-yellow-800';
+      case 'high': return 'bg-red-100 text-red-800';
+      case 'low': return 'bg-blue-100 text-blue-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="animate-pulse space-y-6">
+          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-32 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Health Data Overview</h1>
+        <p className="text-gray-600">Monitor and manage all your health metrics in one place</p>
+      </div>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Blood Pressure</CardTitle>
+            <Activity className="h-4 w-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {summary.bloodPressure.latest ? 
+                `${summary.bloodPressure.latest.systolic}/${summary.bloodPressure.latest.diastolic}` : 
+                'No data'
+              }
+            </div>
+            <p className="text-xs text-gray-500">
+              {summary.bloodPressure.latest ? 
+                `${summary.bloodPressure.total} readings recorded` : 
+                'Start tracking'
+              }
+            </p>
+            {summary.bloodPressure.latest && (
+              <Badge className={`mt-2 ${getCategoryColor(summary.bloodPressure.latest.category)}`}>
+                {summary.bloodPressure.latest.category}
+              </Badge>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Weight & BMI</CardTitle>
+            <Scale className="h-4 w-4 text-orange-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {summary.weight.latest && summary.weight.latest.weight > 0 ? 
+                `${summary.weight.latest.weight} lbs` : 
+                'No data'
+              }
+            </div>
+            <p className="text-xs text-gray-500">
+              {summary.weight.latest && summary.weight.latest.bmi ? 
+                `BMI: ${summary.weight.latest.bmi.toFixed(1)}` : 
+                'Start tracking'
+              }
+            </p>
+            {summary.weight.latest && summary.weight.latest.bmi && (
+              <div className="mt-2">
+                <Progress value={Math.min(summary.weight.latest.bmi * 2, 100)} className="h-2" />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Blood Work</CardTitle>
+            <CreditCard className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {summary.bloodWork.latest ? 
+                `${summary.bloodWork.latest.tests} tests` : 
+                'No data'
+              }
+            </div>
+            <p className="text-xs text-gray-500">
+              {summary.bloodWork.latest ? 
+                `${summary.bloodWork.total} records` : 
+                'Start tracking'
+              }
+            </p>
+            {summary.bloodWork.latest && (
+              <Badge className="mt-2 bg-blue-100 text-blue-800">
+                Latest: {new Date(summary.bloodWork.latest.date).toLocaleDateString()}
+              </Badge>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Doctor Visits</CardTitle>
+            <Stethoscope className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{summary.doctorVisits.total}</div>
+            <p className="text-xs text-gray-500">
+              {summary.doctorVisits.upcoming} upcoming, {summary.doctorVisits.recent} recent
+            </p>
+            {summary.doctorVisits.upcoming > 0 && (
+              <Badge className="mt-2 bg-yellow-100 text-yellow-800">
+                {summary.doctorVisits.upcoming} upcoming
+              </Badge>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Activity className="h-5 w-5 text-red-500" />
+              <span>Blood Pressure</span>
+            </CardTitle>
+            <CardDescription>
+              Record your latest blood pressure reading
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/dashboard/blood-pressure/new">
+              <Button className="w-full">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Reading
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Scale className="h-5 w-5 text-orange-500" />
+              <span>Weight</span>
+            </CardTitle>
+            <CardDescription>
+              Log your current weight and body composition
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/dashboard/weight/new">
+              <Button className="w-full">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Weight
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <FileText className="h-5 w-5 text-blue-500" />
+              <span>Blood Work</span>
+            </CardTitle>
+            <CardDescription>
+              Log your latest lab results
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/dashboard/blood-work/new">
+              <Button className="w-full">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Results
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Stethoscope className="h-5 w-5 text-green-500" />
+              <span>Doctor Visit</span>
+            </CardTitle>
+            <CardDescription>
+              Schedule or log a doctor appointment
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/dashboard/doctor-visits/new">
+              <Button className="w-full">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Visit
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Detailed Views */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <TrendingUp className="h-5 w-5 text-purple-500" />
+              <span>View All Data</span>
+            </CardTitle>
+            <CardDescription>
+              Access detailed views of all your health data
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Link href="/dashboard/blood-pressure">
+              <Button variant="outline" className="w-full justify-start">
+                <Activity className="h-4 w-4 mr-2" />
+                Blood Pressure History
+              </Button>
+            </Link>
+            <Link href="/dashboard/weight">
+              <Button variant="outline" className="w-full justify-start">
+                <Scale className="h-4 w-4 mr-2" />
+                Weight & BMI History
+              </Button>
+            </Link>
+            <Link href="/dashboard/blood-work">
+              <Button variant="outline" className="w-full justify-start">
+                <FileText className="h-4 w-4 mr-2" />
+                Blood Work Records
+              </Button>
+            </Link>
+            <Link href="/dashboard/doctor-visits">
+              <Button variant="outline" className="w-full justify-start">
+                <Stethoscope className="h-4 w-4 mr-2" />
+                Doctor Visit History
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Target className="h-5 w-5 text-indigo-500" />
+              <span>Quick Actions</span>
+            </CardTitle>
+            <CardDescription>
+              Common tasks and shortcuts
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Link href="/dashboard/analytics">
+              <Button variant="outline" className="w-full justify-start">
+                <TrendingUp className="h-4 w-4 mr-2" />
+                View Analytics
+              </Button>
+            </Link>
+            <Link href="/dashboard/calendar">
+              <Button variant="outline" className="w-full justify-start">
+                <Calendar className="h-4 w-4 mr-2" />
+                Manage Calendar
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+} 
