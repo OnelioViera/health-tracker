@@ -126,7 +126,7 @@ export default function HealthDashboard() {
             <div className="text-2xl font-bold">
               {healthData.bloodPressure.systolic}/{healthData.bloodPressure.diastolic}
             </div>
-            <Badge variant={getCategoryColor(healthData.bloodPressure.category) as any} className="mt-1">
+            <Badge variant={getCategoryColor(healthData.bloodPressure.category) as "success" | "warning" | "danger" | "secondary"} className="mt-1">
               {healthData.bloodPressure.category.charAt(0).toUpperCase() + healthData.bloodPressure.category.slice(1)}
             </Badge>
             <p className="text-xs text-muted-foreground mt-1">

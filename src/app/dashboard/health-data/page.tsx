@@ -214,7 +214,7 @@ export default function HealthDataPage() {
               }
             </p>
             {summary.bloodPressure.latest && (
-              <Badge variant={getCategoryColor(summary.bloodPressure.latest.category) as any} className="mt-2">
+              <Badge variant={getCategoryColor(summary.bloodPressure.latest.category) as "success" | "warning" | "danger" | "secondary"}>
                 {summary.bloodPressure.latest.category}
               </Badge>
             )}

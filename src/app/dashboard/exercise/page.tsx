@@ -20,8 +20,7 @@ import {
   Cloud,
   Sun,
   CloudRain,
-  Snowflake,
-  Trash2
+  Snowflake
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -173,37 +172,6 @@ export default function ExercisePage() {
   const handleSyncClick = (e: React.MouseEvent) => {
     e.preventDefault();
     syncFromHikingJournal(false, false);
-  };
-
-  const handleDedicatedCleanup = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsSyncing(true);
-    try {
-      const response = await fetch('/api/cleanup-exercises', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const result = await response.json();
-
-      if (response.ok && result.success) {
-        toast.success(result.message);
-        // Refresh the exercise list
-        await fetchExercises();
-      } else {
-        const errorMessage = result.error || result.message || 'Cleanup failed';
-        toast.error(errorMessage);
-      }
-    } catch (error) {
-      console.error('Error cleaning up exercises:', error);
-      toast.error('Failed to clean up exercises', {
-        description: 'Network error or server issue. Please try again.',
-      });
-    } finally {
-      setIsSyncing(false);
-    }
   };
 
   const formatDuration = (minutes: number) => {

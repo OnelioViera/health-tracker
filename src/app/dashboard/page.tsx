@@ -377,7 +377,7 @@ export default function DashboardPage() {
                   {dashboardData.bloodPressure.systolic}/{dashboardData.bloodPressure.diastolic}
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Badge variant={getCategoryColor(dashboardData.bloodPressure.category) as any}>
+                  <Badge variant={getCategoryColor(dashboardData.bloodPressure.category) as "success" | "warning" | "danger" | "secondary"}>
                     {getCategoryBadge(dashboardData.bloodPressure.category)}
                   </Badge>
                   {dashboardData.bloodPressure.pulse && (
@@ -429,7 +429,7 @@ export default function DashboardPage() {
                   {dashboardData.bloodPressureHistory.slice(1, 4).map((reading, index) => (
                     <div key={reading._id} className="flex items-center justify-between text-xs">
                       <span>{reading.systolic}/{reading.diastolic}</span>
-                      <Badge variant={getCategoryColor(reading.category) as any} className="text-xs">
+                      <Badge variant={getCategoryColor(reading.category) as "success" | "warning" | "danger" | "secondary"} className="text-xs">
                         {getCategoryBadge(reading.category)}
                       </Badge>
                       <span className="text-gray-500">{formatDate(reading.date)}</span>
@@ -489,7 +489,7 @@ export default function DashboardPage() {
                       {getCurrentBMI()?.toFixed(2)}
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Badge variant={getBMICategory(getCurrentBMI()!).color as any}>
+                      <Badge variant={getBMICategory(getCurrentBMI()!).color as "info" | "success" | "warning" | "danger"}>
                         {getBMICategory(getCurrentBMI()!).category}
                       </Badge>
                       {getBMITrend() && (

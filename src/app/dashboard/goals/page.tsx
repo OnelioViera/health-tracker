@@ -506,10 +506,10 @@ export default function GoalsPage() {
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-2">
                         <h3 className="text-lg font-semibold">{goal.title}</h3>
-                        <Badge variant={getCategoryColor(goal.category) as any}>
+                        <Badge variant={getCategoryColor(goal.category) as "warning" | "danger" | "success" | "info" | "secondary"}>
                           {goal.category.charAt(0).toUpperCase() + goal.category.slice(1).replace('-', ' ')}
                         </Badge>
-                        <Badge variant={getStatusColor(goal.status) as any}>
+                        <Badge variant={getStatusColor(goal.status) as "success" | "danger" | "info"}>
                           {goal.status.charAt(0).toUpperCase() + goal.status.slice(1)}
                         </Badge>
                       </div>
