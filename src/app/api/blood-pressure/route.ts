@@ -4,7 +4,18 @@ import connectDB from "@/lib/mongodb";
 import BloodPressure from "@/lib/models/BloodPressure";
 
 // In-memory storage for mock data
-let mockBloodPressureData: any[] = [
+const mockBloodPressureData: Array<{
+  _id: string;
+  userId: string;
+  systolic: number;
+  diastolic: number;
+  pulse: number;
+  date: Date;
+  notes: string;
+  category: string;
+  createdAt: Date;
+  updatedAt: Date;
+}> = [
   {
     _id: 'mock_1',
     userId: 'user_123',

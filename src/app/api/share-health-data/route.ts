@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     const patientName = userProfile ? `${userProfile.firstName} ${userProfile.lastName}` : user.firstName || 'Patient';
 
     // Fetch health data based on selected types
-    const sharedData: any = {};
+    const sharedData: Record<string, unknown[]> = {};
     let totalRecords = 0;
 
     if (dataTypes.includes('bloodPressure')) {

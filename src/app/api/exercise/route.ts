@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
     await connectDB();
 
-    let query: any = { userId };
+    const query: Record<string, unknown> = { userId };
     if (activityType) {
       query.activityType = activityType;
     }
