@@ -344,10 +344,6 @@ export default function ExercisePage() {
               </>
             )}
           </Button>
-          <Button variant="destructive" onClick={handleDedicatedCleanup} disabled={isSyncing}>
-            <Trash2 className="h-4 w-4 mr-2" />
-            Remove All Mock Data
-          </Button>
           <Button onClick={fetchExercises}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
