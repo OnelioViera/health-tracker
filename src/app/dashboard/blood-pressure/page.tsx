@@ -178,15 +178,15 @@ export default function BloodPressurePage() {
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'normal':
-        return 'bg-green-100 text-green-800';
+        return 'success';
       case 'elevated':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'warning';
       case 'high':
-        return 'bg-orange-100 text-orange-800';
+        return 'danger';
       case 'crisis':
-        return 'bg-red-100 text-red-800';
+        return 'danger';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'secondary';
     }
   };
 
@@ -341,7 +341,7 @@ export default function BloodPressurePage() {
         </CardHeader>
         <CardContent>
           {readings.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* Trend Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div className="bg-red-50 p-4 rounded-lg">
@@ -389,8 +389,8 @@ export default function BloodPressurePage() {
                 </div>
                 
                 {readings.length > 1 ? (
-                  <div className="space-y-3">
-                    {readings.slice(0, 8).map((reading, index) => {
+                  <div className="space-y-3 h-48 overflow-y-auto pr-2">
+                    {readings.slice(0, 10).map((reading, index) => {
                       const previousReading = readings[index + 1];
                       const systolicChange = previousReading ? reading.systolic - previousReading.systolic : 0;
                       const diastolicChange = previousReading ? reading.diastolic - previousReading.diastolic : 0;
@@ -433,7 +433,7 @@ export default function BloodPressurePage() {
                             </div>
                           </div>
                           <div className="text-right">
-                            <Badge variant="secondary" className={`text-xs ${getCategoryColor(reading.category)}`}>
+                            <Badge variant={getCategoryColor(reading.category) as any} className="text-xs">
                               {getCategoryBadge(reading.category)}
                             </Badge>
                             {reading.notes && (
@@ -459,7 +459,7 @@ export default function BloodPressurePage() {
 
               {/* Trend Analysis */}
               {readings.length > 1 && (
-                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <div className="p-4 bg-gray-50 rounded-lg">
                   <h4 className="font-medium mb-3">Trend Analysis</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -498,11 +498,11 @@ export default function BloodPressurePage() {
                   <div className="mt-4 pt-4 border-t border-gray-200">
                     <span className="text-sm text-gray-600">Category Changes:</span>
                     <div className="flex items-center space-x-2 mt-1">
-                      <Badge variant="secondary" className={`text-xs ${getCategoryColor(readings[0].category)}`}>
+                      <Badge variant={getCategoryColor(readings[0].category) as any} className="text-xs">
                         Current: {getCategoryBadge(readings[0].category)}
                       </Badge>
                       {readings.length > 1 && (
-                        <Badge variant="secondary" className={`text-xs ${getCategoryColor(readings[1].category)}`}>
+                        <Badge variant={getCategoryColor(readings[1].category) as any} className="text-xs">
                           Previous: {getCategoryBadge(readings[1].category)}
                         </Badge>
                       )}
@@ -562,7 +562,7 @@ export default function BloodPressurePage() {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Badge variant="secondary" className={getCategoryColor(reading.category)}>
+                    <Badge variant={getCategoryColor(reading.category) as any}>
                       {getCategoryBadge(reading.category)}
                     </Badge>
                     <Button
@@ -685,7 +685,7 @@ export default function BloodPressurePage() {
                 <h3 className="text-lg font-semibold text-gray-900">
                   {selectedReading.systolic}/{selectedReading.diastolic} mmHg
                 </h3>
-                <Badge className={`mt-2 ${getCategoryColor(selectedReading.category)}`}>
+                <Badge variant={getCategoryColor(selectedReading.category) as any} className="mt-2">
                   {getCategoryBadge(selectedReading.category)}
                 </Badge>
               </div>

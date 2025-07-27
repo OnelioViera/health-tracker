@@ -163,11 +163,11 @@ export default function HealthDataPage() {
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case 'normal': return 'bg-green-100 text-green-800';
-      case 'elevated': return 'bg-yellow-100 text-yellow-800';
-      case 'high': return 'bg-red-100 text-red-800';
-      case 'low': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'normal': return 'success';
+      case 'elevated': return 'warning';
+      case 'high': return 'danger';
+      case 'low': return 'info';
+      default: return 'secondary';
     }
   };
 
@@ -214,7 +214,7 @@ export default function HealthDataPage() {
               }
             </p>
             {summary.bloodPressure.latest && (
-              <Badge className={`mt-2 ${getCategoryColor(summary.bloodPressure.latest.category)}`}>
+              <Badge variant={getCategoryColor(summary.bloodPressure.latest.category) as any} className="mt-2">
                 {summary.bloodPressure.latest.category}
               </Badge>
             )}
@@ -241,7 +241,11 @@ export default function HealthDataPage() {
             </p>
             {summary.weight.latest && summary.weight.latest.bmi && (
               <div className="mt-2">
-                <Progress value={Math.min(summary.weight.latest.bmi * 2, 100)} className="h-2" />
+                <Progress 
+                  value={Math.min(summary.weight.latest.bmi * 2, 100)} 
+                  variant={summary.weight.latest.bmi < 18.5 ? 'info' : summary.weight.latest.bmi < 25 ? 'success' : summary.weight.latest.bmi < 30 ? 'warning' : 'danger'}
+                  className="h-2" 
+                />
               </div>
             )}
           </CardContent>
@@ -266,7 +270,7 @@ export default function HealthDataPage() {
               }
             </p>
             {summary.bloodWork.latest && (
-              <Badge className="mt-2 bg-blue-100 text-blue-800">
+              <Badge variant="info" className="mt-2">
                 Latest: {new Date(summary.bloodWork.latest.date).toLocaleDateString()}
               </Badge>
             )}
@@ -284,7 +288,7 @@ export default function HealthDataPage() {
               {summary.doctorVisits.upcoming} upcoming, {summary.doctorVisits.recent} recent
             </p>
             {summary.doctorVisits.upcoming > 0 && (
-              <Badge className="mt-2 bg-yellow-100 text-yellow-800">
+              <Badge variant="warning" className="mt-2">
                 {summary.doctorVisits.upcoming} upcoming
               </Badge>
             )}

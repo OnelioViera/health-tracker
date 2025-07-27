@@ -75,10 +75,10 @@ export default function WeightPage() {
   };
 
   const getBMICategory = (bmi: number) => {
-    if (bmi < 18.5) return { category: 'Underweight', color: 'bg-blue-100 text-blue-800' };
-    if (bmi < 25) return { category: 'Normal', color: 'bg-green-100 text-green-800' };
-    if (bmi < 30) return { category: 'Overweight', color: 'bg-yellow-100 text-yellow-800' };
-    return { category: 'Obese', color: 'bg-red-100 text-red-800' };
+    if (bmi < 18.5) return { category: 'Underweight', color: 'info' };
+    if (bmi < 25) return { category: 'Normal', color: 'success' };
+    if (bmi < 30) return { category: 'Overweight', color: 'warning' };
+    return { category: 'Obese', color: 'danger' };
   };
 
   const calculateTrend = (current: number, previous: number) => {

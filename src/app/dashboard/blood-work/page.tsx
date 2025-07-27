@@ -76,13 +76,13 @@ export default function BloodWorkPage() {
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'normal':
-        return 'bg-green-100 text-green-800';
+        return 'success';
       case 'abnormal':
-        return 'bg-red-100 text-red-800';
+        return 'danger';
       case 'borderline':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'warning';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'secondary';
     }
   };
 
@@ -237,7 +237,7 @@ export default function BloodWorkPage() {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Badge variant="secondary" className={getCategoryColor(record.category)}>
+                    <Badge variant={getCategoryColor(record.category)}>
                       {getCategoryBadge(record.category)}
                     </Badge>
                     <Link href={`/dashboard/blood-work/${record._id}`}>

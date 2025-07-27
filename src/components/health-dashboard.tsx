@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, Scale, Target, TrendingUp, TrendingDown, Heart } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface HealthMetrics {
   weight?: {
@@ -53,16 +54,11 @@ export default function HealthDashboard() {
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case 'normal':
-        return 'text-green-600';
-      case 'elevated':
-        return 'text-yellow-600';
-      case 'high':
-        return 'text-red-600';
-      case 'crisis':
-        return 'text-red-800';
-      default:
-        return 'text-gray-600';
+      case 'normal': return 'success';
+      case 'elevated': return 'warning';
+      case 'high': return 'danger';
+      case 'crisis': return 'danger';
+      default: return 'secondary';
     }
   };
 
@@ -130,9 +126,9 @@ export default function HealthDashboard() {
             <div className="text-2xl font-bold">
               {healthData.bloodPressure.systolic}/{healthData.bloodPressure.diastolic}
             </div>
-            <div className={`text-sm font-medium ${getCategoryColor(healthData.bloodPressure.category)}`}>
+            <Badge variant={getCategoryColor(healthData.bloodPressure.category) as any} className="mt-1">
               {healthData.bloodPressure.category.charAt(0).toUpperCase() + healthData.bloodPressure.category.slice(1)}
-            </div>
+            </Badge>
             <p className="text-xs text-muted-foreground mt-1">
               Updated: {new Date(healthData.bloodPressure.lastUpdated).toLocaleDateString()}
             </p>

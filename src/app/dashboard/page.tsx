@@ -183,15 +183,15 @@ export default function DashboardPage() {
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'normal':
-        return 'bg-green-100 text-green-800';
+        return 'success';
       case 'elevated':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'warning';
       case 'high':
-        return 'bg-orange-100 text-orange-800';
+        return 'danger';
       case 'crisis':
-        return 'bg-red-100 text-red-800';
+        return 'danger';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'secondary';
     }
   };
 
@@ -296,10 +296,10 @@ export default function DashboardPage() {
   };
 
   const getBMICategory = (bmi: number) => {
-    if (bmi < 18.5) return { category: 'Underweight', color: 'bg-blue-100 text-blue-800' };
-    if (bmi < 25) return { category: 'Normal', color: 'bg-green-100 text-green-800' };
-    if (bmi < 30) return { category: 'Overweight', color: 'bg-yellow-100 text-yellow-800' };
-    return { category: 'Obese', color: 'bg-red-100 text-red-800' };
+    if (bmi < 18.5) return { category: 'Underweight', color: 'info' };
+    if (bmi < 25) return { category: 'Normal', color: 'success' };
+    if (bmi < 30) return { category: 'Overweight', color: 'warning' };
+    return { category: 'Obese', color: 'danger' };
   };
 
   const getCurrentBMI = () => {
@@ -377,7 +377,7 @@ export default function DashboardPage() {
                   {dashboardData.bloodPressure.systolic}/{dashboardData.bloodPressure.diastolic}
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Badge variant="secondary" className={getCategoryColor(dashboardData.bloodPressure.category)}>
+                  <Badge variant={getCategoryColor(dashboardData.bloodPressure.category) as any}>
                     {getCategoryBadge(dashboardData.bloodPressure.category)}
                   </Badge>
                   {dashboardData.bloodPressure.pulse && (
@@ -429,7 +429,7 @@ export default function DashboardPage() {
                   {dashboardData.bloodPressureHistory.slice(1, 4).map((reading, index) => (
                     <div key={reading._id} className="flex items-center justify-between text-xs">
                       <span>{reading.systolic}/{reading.diastolic}</span>
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant={getCategoryColor(reading.category) as any} className="text-xs">
                         {getCategoryBadge(reading.category)}
                       </Badge>
                       <span className="text-gray-500">{formatDate(reading.date)}</span>
@@ -489,7 +489,7 @@ export default function DashboardPage() {
                       {getCurrentBMI()?.toFixed(2)}
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Badge variant="secondary" className={getBMICategory(getCurrentBMI()!).color}>
+                      <Badge variant={getBMICategory(getCurrentBMI()!).color as any}>
                         {getBMICategory(getCurrentBMI()!).category}
                       </Badge>
                       {getBMITrend() && (

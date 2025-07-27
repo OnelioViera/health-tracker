@@ -224,15 +224,15 @@ export default function ExercisePage() {
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case 'easy':
-        return 'bg-green-100 text-green-800';
+        return 'success';
       case 'moderate':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'warning';
       case 'hard':
-        return 'bg-orange-100 text-orange-800';
+        return 'danger';
       case 'extreme':
-        return 'bg-red-100 text-red-800';
+        return 'danger';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'secondary';
     }
   };
 
@@ -289,6 +289,19 @@ export default function ExercisePage() {
   };
 
   const stats = calculateStats();
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'success';
+      case 'in-progress':
+        return 'warning';
+      case 'planned':
+        return 'info';
+      default:
+        return 'secondary';
+    }
+  };
 
   if (isLoading) {
     return (
@@ -476,7 +489,7 @@ export default function ExercisePage() {
                     </div>
                     <div className="flex items-center space-x-2">
                       {getMoodIcon(exercise.mood)}
-                      <Badge variant="secondary" className={getDifficultyColor(exercise.difficulty)}>
+                      <Badge variant={getDifficultyColor(exercise.difficulty)}>
                         {exercise.difficulty}
                       </Badge>
                     </div>

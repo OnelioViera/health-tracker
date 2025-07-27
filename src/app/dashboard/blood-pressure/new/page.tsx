@@ -90,11 +90,11 @@ export default function NewBloodPressurePage() {
 
   const getCategoryColor = (cat: string) => {
     switch (cat) {
-      case 'normal': return 'bg-green-100 text-green-800';
-      case 'elevated': return 'bg-yellow-100 text-yellow-800';
-      case 'high': return 'bg-orange-100 text-orange-800';
-      case 'crisis': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'normal': return 'success';
+      case 'elevated': return 'warning';
+      case 'high': return 'danger';
+      case 'crisis': return 'danger';
+      default: return 'secondary';
     }
   };
 

@@ -411,13 +411,13 @@ export default function AnalyticsPage() {
                 </p>
               </div>
               <Badge 
-                variant="secondary" 
-                className={`text-xs mt-2 ${
-                  metric.status === "normal" ? "bg-green-100 text-green-800" :
-                  metric.status === "improving" ? "bg-blue-100 text-blue-800" :
-                  metric.status === "warning" ? "bg-yellow-100 text-yellow-800" :
-                  "bg-red-100 text-red-800"
-                }`}
+                variant={
+                  metric.status === "normal" ? "success" :
+                  metric.status === "improving" ? "info" :
+                  metric.status === "warning" ? "warning" :
+                  "danger"
+                }
+                className="text-xs mt-2"
               >
                 {metric.status}
               </Badge>
@@ -448,7 +448,11 @@ export default function AnalyticsPage() {
                       <span className="text-sm font-medium">Blood Pressure (Systolic)</span>
                       <span className="text-sm text-gray-500">{bloodPressureData[0].systolic} mmHg</span>
                     </div>
-                    <Progress value={Math.min((bloodPressureData[0].systolic / 140) * 100, 100)} className="h-2" />
+                    <Progress 
+                      value={Math.min((bloodPressureData[0].systolic / 140) * 100, 100)} 
+                      variant={bloodPressureData[0].systolic > 130 ? "danger" : bloodPressureData[0].systolic > 120 ? "warning" : "success"}
+                      className="h-2" 
+                    />
                   </div>
                 )}
 
@@ -459,18 +463,22 @@ export default function AnalyticsPage() {
                       <span className="text-sm font-medium">Weight</span>
                       <span className="text-sm text-gray-500">{weightData[0].weight} {weightData[0].unit}</span>
                     </div>
-                    <Progress value={78} className="h-2" />
+                    <Progress value={78} variant="info" className="h-2" />
                   </div>
                 )}
 
                 {/* Heart Rate Trend */}
-                {bloodPressureData.length > 0 && (
+                {bloodPressureData.length > 0 && bloodPressureData[0].pulse && (
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium">Heart Rate</span>
                       <span className="text-sm text-gray-500">{bloodPressureData[0].pulse} bpm</span>
                     </div>
-                    <Progress value={90} className="h-2" />
+                    <Progress 
+                      value={Math.min((bloodPressureData[0].pulse / 100) * 100, 100)} 
+                      variant={bloodPressureData[0].pulse > 100 ? "danger" : bloodPressureData[0].pulse > 80 ? "warning" : "success"}
+                      className="h-2" 
+                    />
                   </div>
                 )}
               </div>
@@ -565,7 +573,7 @@ export default function AnalyticsPage() {
                         }
                       </span>
                     </div>
-                    <Progress value={75} className="h-2" />
+                    <Progress value={75} variant="info" className="h-2" />
                   </div>
                 )}
 
@@ -578,7 +586,11 @@ export default function AnalyticsPage() {
                         {bloodPressureData[0].category === 'normal' ? '100%' : '75%'}
                       </span>
                     </div>
-                    <Progress value={bloodPressureData[0].category === 'normal' ? 100 : 75} className="h-2" />
+                    <Progress 
+                      value={bloodPressureData[0].category === 'normal' ? 100 : 75} 
+                      variant={bloodPressureData[0].category === 'normal' ? 'success' : 'warning'}
+                      className="h-2" 
+                    />
                   </div>
                 )}
 
@@ -590,7 +602,11 @@ export default function AnalyticsPage() {
                       {doctorVisitsData.filter(v => v.status === 'completed').length} completed
                     </span>
                   </div>
-                  <Progress value={60} className="h-2" />
+                  <Progress 
+                    value={Math.min((doctorVisitsData.filter(v => v.status === 'completed').length / 4) * 100, 100)} 
+                    variant="success"
+                    className="h-2" 
+                  />
                 </div>
               </div>
             </CardContent>

@@ -232,26 +232,26 @@ export default function GoalsPage() {
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'weight':
-        return 'bg-orange-100 text-orange-800';
+        return 'warning';
       case 'blood-pressure':
-        return 'bg-red-100 text-red-800';
+        return 'danger';
       case 'exercise':
-        return 'bg-green-100 text-green-800';
+        return 'success';
       case 'nutrition':
-        return 'bg-blue-100 text-blue-800';
+        return 'info';
       default:
-        return 'bg-purple-100 text-purple-800';
+        return 'secondary';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
-        return 'bg-green-100 text-green-800';
+        return 'success';
       case 'overdue':
-        return 'bg-red-100 text-red-800';
+        return 'danger';
       default:
-        return 'bg-blue-100 text-blue-800';
+        return 'info';
     }
   };
 
@@ -506,14 +506,11 @@ export default function GoalsPage() {
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-2">
                         <h3 className="text-lg font-semibold">{goal.title}</h3>
-                        <Badge variant="secondary" className={getCategoryColor(goal.category)}>
-                          {goal.category.replace('-', ' ')}
+                        <Badge variant={getCategoryColor(goal.category) as any}>
+                          {goal.category.charAt(0).toUpperCase() + goal.category.slice(1).replace('-', ' ')}
                         </Badge>
-                        <Badge variant="secondary" className={getStatusColor(goal.status)}>
-                          <div className="flex items-center space-x-1">
-                            {getStatusIcon(goal.status)}
-                            <span>{goal.status}</span>
-                          </div>
+                        <Badge variant={getStatusColor(goal.status) as any}>
+                          {goal.status.charAt(0).toUpperCase() + goal.status.slice(1)}
                         </Badge>
                       </div>
                       
@@ -524,7 +521,11 @@ export default function GoalsPage() {
                           <span>Progress</span>
                           <span className="font-medium">{calculateProgress(goal).toFixed(1)}%</span>
                         </div>
-                        <Progress value={calculateProgress(goal)} className="h-2" />
+                        <Progress 
+                          value={calculateProgress(goal)} 
+                          variant={goal.status === 'completed' ? 'success' : goal.status === 'overdue' ? 'danger' : 'info'}
+                          className="h-2" 
+                        />
                         <div className="flex items-center justify-between text-sm text-gray-500">
                           <span>{goal.currentValue} {goal.unit}</span>
                           <ArrowRight className="h-4 w-4" />

@@ -321,25 +321,25 @@ export default function BloodPressureTrendsPage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Normal</span>
-                    <Badge variant="secondary" className="bg-green-100 text-green-800">
+                    <Badge variant="success">
                       {categoryDistribution.normal} ({Math.round((categoryDistribution.normal / filteredReadings.length) * 100)}%)
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Elevated</span>
-                    <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                    <Badge variant="warning">
                       {categoryDistribution.elevated} ({Math.round((categoryDistribution.elevated / filteredReadings.length) * 100)}%)
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm">High</span>
-                    <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+                    <Badge variant="danger">
                       {categoryDistribution.high} ({Math.round((categoryDistribution.high / filteredReadings.length) * 100)}%)
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Crisis</span>
-                    <Badge variant="secondary" className="bg-red-100 text-red-800">
+                    <Badge variant="danger">
                       {categoryDistribution.crisis} ({Math.round((categoryDistribution.crisis / filteredReadings.length) * 100)}%)
                     </Badge>
                   </div>

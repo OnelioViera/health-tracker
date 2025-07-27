@@ -454,7 +454,7 @@ export default function UserProfilePage() {
                 <User className="h-5 w-5" />
                 <span>Personal Information</span>
                 {isEditing && (
-                  <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                  <Badge variant="info">
                     Editing
                   </Badge>
                 )}
@@ -524,12 +524,12 @@ export default function UserProfilePage() {
                       />
                       <div className="flex items-center space-x-2">
                         {isEmailVerified ? (
-                          <Badge variant="secondary" className="bg-green-100 text-green-800">
+                          <Badge variant="success">
                             <CheckCircle className="h-3 w-3 mr-1" />
                             Verified
                           </Badge>
                         ) : (
-                          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                          <Badge variant="warning">
                             <AlertCircle className="h-3 w-3 mr-1" />
                             Unverified
                           </Badge>
@@ -981,7 +981,9 @@ export default function UserProfilePage() {
                 <Shield className="h-5 w-5 text-gray-500" />
                 <div>
                   <p className="text-sm font-medium">Account Status</p>
-                  <p className="text-xs text-gray-600">Active</p>
+                  <Badge variant="success">
+                    Active
+                  </Badge>
                 </div>
               </div>
 
