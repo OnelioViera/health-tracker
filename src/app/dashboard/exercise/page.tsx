@@ -20,7 +20,8 @@ import {
   Cloud,
   Sun,
   CloudRain,
-  Snowflake
+  Snowflake,
+  Trash2
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -122,10 +123,15 @@ export default function ExercisePage() {
     }
   };
 
-  const syncFromHikingJournal = async (force = false) => {
+  const syncFromHikingJournal = async (force = false, cleanup = false) => {
     setIsSyncing(true);
     try {
-      const url = force ? '/api/sync-exercise?force=true' : '/api/sync-exercise';
+      let url = '/api/sync-exercise';
+      const params = new URLSearchParams();
+      if (force) params.append('force', 'true');
+      if (cleanup) params.append('cleanup', 'true');
+      if (params.toString()) url += '?' + params.toString();
+      
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -166,7 +172,38 @@ export default function ExercisePage() {
 
   const handleSyncClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    syncFromHikingJournal(false);
+    syncFromHikingJournal(false, false);
+  };
+
+  const handleDedicatedCleanup = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsSyncing(true);
+    try {
+      const response = await fetch('/api/cleanup-exercises', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        toast.success(result.message);
+        // Refresh the exercise list
+        await fetchExercises();
+      } else {
+        const errorMessage = result.error || result.message || 'Cleanup failed';
+        toast.error(errorMessage);
+      }
+    } catch (error) {
+      console.error('Error cleaning up exercises:', error);
+      toast.error('Failed to clean up exercises', {
+        description: 'Network error or server issue. Please try again.',
+      });
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   const formatDuration = (minutes: number) => {
@@ -294,6 +331,10 @@ export default function ExercisePage() {
               </>
             )}
           </Button>
+          <Button variant="destructive" onClick={handleDedicatedCleanup} disabled={isSyncing}>
+            <Trash2 className="h-4 w-4 mr-2" />
+            Remove All Mock Data
+          </Button>
           <Button onClick={fetchExercises}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
@@ -394,7 +435,7 @@ export default function ExercisePage() {
             <div className="mt-3 pt-3 border-t border-gray-200">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4 text-xs text-gray-500">
-                  <span>API Endpoint: hiking-journal-hwbthqfeg-onelio-vieras-projects.vercel.app/api/activities</span>
+                  <span>API Endpoint: hiking-journal-amber.vercel.app/api/activities</span>
                   <span>Status: {
                     integrationStatus.available ? "✅ Online" : 
                     integrationStatus.message?.includes('authentication') ? "🔐 Requires Auth" : 

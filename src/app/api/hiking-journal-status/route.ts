@@ -10,7 +10,7 @@ export async function GET() {
     console.log('Checking Hiking Journal public API status...');
     
     // Test the Hiking Journal API endpoint (public, no authentication required)
-    const testResponse = await fetch('https://hiking-journal-hwbthqfeg-onelio-vieras-projects.vercel.app/api/activities', {
+    const testResponse = await fetch('https://hiking-journal-amber.vercel.app/api/activities', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -23,7 +23,7 @@ export async function GET() {
     console.log('Status check - Response ok:', testResponse.ok);
 
     const status = {
-      url: 'https://hiking-journal-hwbthqfeg-onelio-vieras-projects.vercel.app/api/activities',
+      url: 'https://hiking-journal-amber.vercel.app/api/activities',
       status: testResponse.status,
       statusText: testResponse.statusText,
       available: testResponse.ok,
@@ -32,13 +32,13 @@ export async function GET() {
     };
 
     // Also test the main site
-    const mainSiteResponse = await fetch('https://hiking-journal-hwbthqfeg-onelio-vieras-projects.vercel.app/', {
+    const mainSiteResponse = await fetch('https://hiking-journal-amber.vercel.app/', {
       method: 'GET',
       signal: AbortSignal.timeout(5000),
     });
 
     const mainSiteStatus = {
-      url: 'https://hiking-journal-hwbthqfeg-onelio-vieras-projects.vercel.app/',
+      url: 'https://hiking-journal-amber.vercel.app/',
       status: mainSiteResponse.status,
       statusText: mainSiteResponse.statusText,
       available: mainSiteResponse.ok,

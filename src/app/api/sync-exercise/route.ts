@@ -14,17 +14,75 @@ export async function POST(request: NextRequest) {
       }, { status: 401 });
     }
 
-    // Check for force parameter
+    // Check for force parameter and cleanup parameter
     const url = new URL(request.url);
     const forceSync = url.searchParams.get('force') === 'true';
+    const cleanupMock = url.searchParams.get('cleanup') === 'true';
 
     await connectDB();
+
+    // Clean up mock data if requested
+    if (cleanupMock) {
+      console.log('Cleaning up mock data...');
+      
+      // Remove all mock data
+      const mockExercises = await Exercise.find({ 
+        userId, 
+        source: 'mock-data' 
+      });
+      
+      if (mockExercises.length > 0) {
+        await Exercise.deleteMany({ 
+          userId, 
+          source: 'mock-data' 
+        });
+        console.log(`Removed ${mockExercises.length} mock exercises`);
+      }
+      
+      // Also remove any exercises with mock external IDs
+      const mockExternalIds = await Exercise.find({ 
+        userId, 
+        externalId: { $regex: /^mock_/ } 
+      });
+      
+      if (mockExternalIds.length > 0) {
+        await Exercise.deleteMany({ 
+          userId, 
+          externalId: { $regex: /^mock_/ } 
+        });
+        console.log(`Removed ${mockExternalIds.length} exercises with mock external IDs`);
+      }
+      
+      // Remove any exercises that don't have a proper source
+      const invalidSourceExercises = await Exercise.find({ 
+        userId, 
+        $or: [
+          { source: { $exists: false } },
+          { source: '' },
+          { source: 'demo' },
+          { source: 'test' }
+        ]
+      });
+      
+      if (invalidSourceExercises.length > 0) {
+        await Exercise.deleteMany({ 
+          userId, 
+          $or: [
+            { source: { $exists: false } },
+            { source: '' },
+            { source: 'demo' },
+            { source: 'test' }
+          ]
+        });
+        console.log(`Removed ${invalidSourceExercises.length} exercises with invalid sources`);
+      }
+    }
 
     // Fetch exercise data from Hiking Journal app (public endpoint)
     try {
       console.log('Attempting to fetch from Hiking Journal public API...');
       
-      const hikingResponse = await fetch('https://hiking-journal-hwbthqfeg-onelio-vieras-projects.vercel.app/api/activities', {
+      const hikingResponse = await fetch('https://hiking-journal-amber.vercel.app/api/activities', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -147,11 +205,12 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
           success: true,
-          message: `Successfully synced ${syncedActivities.length} activities from Hiking Journal${forceSync ? ' (force sync)' : ''}`,
+          message: `Successfully synced ${syncedActivities.length} activities from Hiking Journal${forceSync ? ' (force sync)' : ''}${cleanupMock ? ' and cleaned up mock data' : ''}`,
           syncedCount: syncedActivities.length,
           source: 'hiking-journal',
           authMethod: 'public-api',
-          forceSync
+          forceSync,
+          cleanupMock
         });
       } else {
         console.log(`Hiking Journal API returned status: ${hikingResponse.status}`);
@@ -160,86 +219,96 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       console.error('Error syncing from Hiking Journal:', error);
       
-      // Create mock data for demonstration if API is unavailable
-      console.log('Creating mock data for demonstration...');
-      
-      const mockExercises = [
-        {
-          userId,
-          activityType: 'hiking',
-          title: 'Mountain Trail Hike',
-          description: 'Beautiful hike through mountain trails with scenic views',
-          date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-          duration: 180, // 3 hours
-          distance: 5.2,
-          distanceUnit: 'miles',
-          calories: 850,
-          elevation: { gain: 1200, loss: 1200 },
-          location: { name: 'Mountain Trail' },
-          weather: { temperature: 65, conditions: 'Sunny' },
-          difficulty: 'moderate',
-          mood: 'great',
-          source: 'hiking-journal',
-          externalId: 'mock_1'
-        },
-        {
-          userId,
-          activityType: 'hiking',
-          title: 'Riverside Walk',
-          description: 'Peaceful walk along the river with gentle terrain',
-          date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
-          duration: 90, // 1.5 hours
-          distance: 3.1,
-          distanceUnit: 'miles',
-          calories: 450,
-          elevation: { gain: 200, loss: 200 },
-          location: { name: 'Riverside Trail' },
-          weather: { temperature: 72, conditions: 'Partly Cloudy' },
-          difficulty: 'easy',
-          mood: 'good',
-          source: 'hiking-journal',
-          externalId: 'mock_2'
-        },
-        {
-          userId,
-          activityType: 'hiking',
-          title: 'Forest Trail Adventure',
-          description: 'Challenging hike through dense forest with steep climbs',
-          date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
-          duration: 240, // 4 hours
-          distance: 7.8,
-          distanceUnit: 'miles',
-          calories: 1200,
-          elevation: { gain: 1800, loss: 1800 },
-          location: { name: 'National Forest' },
-          weather: { temperature: 58, conditions: 'Overcast' },
-          difficulty: 'hard',
-          mood: 'tough',
-          source: 'hiking-journal',
-          externalId: 'mock_3'
-        }
-      ];
+      // Only create mock data if cleanup wasn't requested
+      if (!cleanupMock) {
+        // Create mock data for demonstration if API is unavailable
+        console.log('Creating mock data for demonstration...');
+        
+        const mockExercises = [
+          {
+            userId,
+            activityType: 'hiking',
+            title: 'Mountain Trail Hike',
+            description: 'Beautiful hike through mountain trails with scenic views',
+            date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+            duration: 180, // 3 hours
+            distance: 5.2,
+            distanceUnit: 'miles',
+            calories: 850,
+            elevation: { gain: 1200, loss: 1200 },
+            location: { name: 'Mountain Trail' },
+            weather: { temperature: 65, conditions: 'Sunny' },
+            difficulty: 'moderate',
+            mood: 'great',
+            source: 'mock-data',
+            externalId: 'mock_1'
+          },
+          {
+            userId,
+            activityType: 'hiking',
+            title: 'Riverside Walk',
+            description: 'Peaceful walk along the river with gentle terrain',
+            date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
+            duration: 90, // 1.5 hours
+            distance: 3.1,
+            distanceUnit: 'miles',
+            calories: 450,
+            elevation: { gain: 200, loss: 200 },
+            location: { name: 'Riverside Trail' },
+            weather: { temperature: 72, conditions: 'Partly Cloudy' },
+            difficulty: 'easy',
+            mood: 'good',
+            source: 'mock-data',
+            externalId: 'mock_2'
+          },
+          {
+            userId,
+            activityType: 'hiking',
+            title: 'Forest Trail Adventure',
+            description: 'Challenging hike through dense forest with steep climbs',
+            date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
+            duration: 240, // 4 hours
+            distance: 7.8,
+            distanceUnit: 'miles',
+            calories: 1200,
+            elevation: { gain: 1800, loss: 1800 },
+            location: { name: 'National Forest' },
+            weather: { temperature: 58, conditions: 'Overcast' },
+            difficulty: 'hard',
+            mood: 'tough',
+            source: 'mock-data',
+            externalId: 'mock_3'
+          }
+        ];
 
-      for (const exerciseData of mockExercises) {
-        const existingExercise = await Exercise.findOne({ 
-          userId, 
-          externalId: exerciseData.externalId 
+        for (const exerciseData of mockExercises) {
+          const existingExercise = await Exercise.findOne({ 
+            userId, 
+            externalId: exerciseData.externalId 
+          });
+
+          if (!existingExercise) {
+            const exercise = new Exercise(exerciseData);
+            await exercise.save();
+          }
+        }
+
+        return NextResponse.json({
+          success: true,
+          message: 'Created mock exercise data for demonstration (Hiking Journal API is not available)',
+          syncedCount: mockExercises.length,
+          source: 'mock-data',
+          error: 'Hiking Journal API is not available',
+          authMethod: 'public-api'
         });
-
-        if (!existingExercise) {
-          const exercise = new Exercise(exerciseData);
-          await exercise.save();
-        }
+      } else {
+        return NextResponse.json({
+          success: false,
+          message: 'Hiking Journal API is not available and cleanup was requested',
+          error: 'API unavailable',
+          authMethod: 'public-api'
+        }, { status: 503 });
       }
-
-      return NextResponse.json({
-        success: true,
-        message: 'Created mock exercise data for demonstration (Hiking Journal API is not available)',
-        syncedCount: mockExercises.length,
-        source: 'mock-data',
-        error: 'Hiking Journal API is not available',
-        authMethod: 'public-api'
-      });
     }
   } catch (error) {
     console.error('Error in sync-exercise endpoint:', error);
