@@ -57,11 +57,19 @@ interface WeightRecord {
   notes?: string;
 }
 
+interface BloodWorkResult {
+  parameter: string;
+  value: number;
+  unit: string;
+  referenceRange: { min: number; max: number };
+  status: string;
+}
+
 interface BloodWorkRecord {
   _id: string;
   testName: string;
   testDate: string;
-  results: any[];
+  results: BloodWorkResult[];
   labName: string;
   doctorName?: string;
   notes?: string;
@@ -80,6 +88,15 @@ interface DoctorVisit {
   location?: string;
 }
 
+interface RecentActivity {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  date: string;
+  icon: string;
+}
+
 interface DashboardData {
   bloodPressure: BloodPressureReading | null;
   bloodPressureHistory: BloodPressureReading[];
@@ -88,7 +105,7 @@ interface DashboardData {
   bloodWork: BloodWorkRecord | null;
   doctorVisit: DoctorVisit | null;
   upcomingVisits: DoctorVisit[];
-  recentActivity: any[];
+  recentActivity: RecentActivity[];
 }
 
 export default function DashboardPage() {
@@ -314,7 +331,7 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600">Welcome back, {user?.firstName || 'there'}! Here's your health overview.</p>
+            <p className="text-gray-600">Welcome back, {user?.firstName || 'there'}! Here&apos;s your health overview.</p>
           </div>
         </div>
         <div className="flex items-center justify-center h-64">
@@ -330,7 +347,7 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600">Welcome back, {user?.firstName || 'there'}! Here's your health overview.</p>
+          <p className="text-gray-600">Welcome back, {user?.firstName || 'there'}! Here&apos;s your health overview.</p>
         </div>
         <div className="flex space-x-2">
           <Button onClick={fetchLatestData}>
@@ -907,7 +924,7 @@ export default function DashboardPage() {
               <CheckCircle className="h-5 w-5 text-green-500" />
               <div className="flex-1">
                 <p className="text-sm font-medium">Health Check</p>
-                <p className="text-xs text-gray-500">Record today's vital signs</p>
+                <p className="text-xs text-gray-500">Record today&apos;s vital signs</p>
               </div>
               <Link href="/dashboard/blood-pressure/new">
                 <Button size="sm" variant="outline">

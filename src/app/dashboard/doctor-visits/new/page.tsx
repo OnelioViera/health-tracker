@@ -268,7 +268,7 @@ export default function NewDoctorVisitPage() {
           <CardHeader>
             <CardTitle>Symptoms</CardTitle>
             <CardDescription>
-              List any symptoms you're experiencing
+              List any symptoms you&apos;re experiencing
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

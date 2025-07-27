@@ -6,10 +6,19 @@ if (!MONGODB_URI || MONGODB_URI === 'your_mongodb_atlas_connection_string') {
   console.warn('MongoDB URI not configured. Using mock data for now.');
 }
 
-let cached = global.mongoose;
+interface MongooseCache {
+  conn: typeof mongoose | null;
+  promise: Promise<typeof mongoose> | null;
+}
 
-if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
+declare global {
+  var mongoose: MongooseCache | undefined;
+}
+
+const cached: MongooseCache = global.mongoose || { conn: null, promise: null };
+
+if (!global.mongoose) {
+  global.mongoose = { conn: null, promise: null };
 }
 
 async function connectDB() {

@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth, getAuth } from '@clerk/nextjs/server';
+import { auth } from '@clerk/nextjs/server';
 import connectDB from '@/lib/mongodb';
 import Exercise from '@/lib/models/Exercise';
-import { getUserApiKey } from '@/lib/api-key-manager';
 
 export async function POST(request: NextRequest) {
   try {

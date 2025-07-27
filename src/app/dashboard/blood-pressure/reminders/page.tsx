@@ -39,9 +39,12 @@ interface Reminder {
   createdAt: string;
 }
 
+type FrequencyType = 'daily' | 'weekly' | 'custom';
+type NotificationType = 'push' | 'email' | 'sms';
+
 export default function BloodPressureRemindersPage() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingReminder, setEditingReminder] = useState<Partial<Reminder>>({});
@@ -54,49 +57,46 @@ export default function BloodPressureRemindersPage() {
     quietHoursEnd: '08:00'
   });
 
-  // Mock reminders data (in a real app, this would come from an API)
-  const mockReminders: Reminder[] = [
-    {
-      _id: '1',
-      title: 'Morning Blood Pressure Check',
-      frequency: 'daily',
-      time: '08:00',
-      days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
-      isActive: true,
-      message: 'Time to check your blood pressure!',
-      notificationType: 'push',
-      createdAt: new Date().toISOString()
-    },
-    {
-      _id: '2',
-      title: 'Evening Blood Pressure Check',
-      frequency: 'daily',
-      time: '20:00',
-      days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
-      isActive: true,
-      message: 'Evening blood pressure reading time',
-      notificationType: 'push',
-      createdAt: new Date().toISOString()
-    },
-    {
-      _id: '3',
-      title: 'Weekly Review Reminder',
-      frequency: 'weekly',
-      time: '10:00',
-      days: ['sunday'],
-      isActive: false,
-      message: 'Review your blood pressure trends this week',
-      notificationType: 'email',
-      createdAt: new Date().toISOString()
-    }
-  ];
-
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setReminders(mockReminders);
-      setIsLoading(false);
-    }, 1000);
+    // Load mock reminders for demo
+    const mockReminders: Reminder[] = [
+      {
+        _id: '1',
+        title: 'Morning Blood Pressure Check',
+        frequency: 'daily',
+        time: '08:00',
+        days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
+        isActive: true,
+        message: 'Time to check your blood pressure!',
+        notificationType: 'push',
+        createdAt: new Date().toISOString()
+      },
+      {
+        _id: '2',
+        title: 'Evening Blood Pressure Check',
+        frequency: 'daily',
+        time: '20:00',
+        days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
+        isActive: true,
+        message: 'Evening blood pressure check time!',
+        notificationType: 'push',
+        createdAt: new Date().toISOString()
+      },
+      {
+        _id: '3',
+        title: 'Weekly Blood Pressure Review',
+        frequency: 'weekly',
+        time: '10:00',
+        days: ['sunday'],
+        isActive: false,
+        message: 'Weekly blood pressure review and analysis',
+        notificationType: 'email',
+        createdAt: new Date().toISOString()
+      }
+    ];
+    
+    setReminders(mockReminders);
+    setLoading(false);
   }, []);
 
   const handleCreateReminder = () => {
@@ -185,7 +185,7 @@ export default function BloodPressureRemindersPage() {
   const activeReminders = reminders.filter(r => r.isActive);
   const inactiveReminders = reminders.filter(r => !r.isActive);
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
@@ -539,7 +539,7 @@ export default function BloodPressureRemindersPage() {
                 <Label htmlFor="frequency">Frequency</Label>
                 <Select 
                   value={editingReminder.frequency || 'daily'} 
-                  onValueChange={(value) => setEditingReminder({ ...editingReminder, frequency: value as any })}
+                  onValueChange={(value) => setEditingReminder({ ...editingReminder, frequency: value as FrequencyType })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -566,7 +566,7 @@ export default function BloodPressureRemindersPage() {
               <Label htmlFor="notificationType">Notification Type</Label>
               <Select 
                 value={editingReminder.notificationType || 'push'} 
-                onValueChange={(value) => setEditingReminder({ ...editingReminder, notificationType: value as any })}
+                onValueChange={(value) => setEditingReminder({ ...editingReminder, notificationType: value as NotificationType })}
               >
                 <SelectTrigger>
                   <SelectValue />

@@ -18,6 +18,13 @@ interface WeightRecord {
   notes?: string;
 }
 
+interface BMIRange {
+  underweight: { min: number; max: number };
+  normal: { min: number; max: number };
+  overweight: { min: number; max: number };
+  obese: { min: number; max: number };
+}
+
 export default function WeightPage() {
   const [weightRecords, setWeightRecords] = useState<WeightRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -97,7 +104,7 @@ export default function WeightPage() {
       underweight: { min: 0, max: underweightMax },
       normal: { min: normalMin, max: normalMax },
       overweight: { min: overweightMin, max: overweightMax },
-      obese: { min: obeseMin, max: null }
+      obese: { min: obeseMin, max: Infinity }
     };
   };
 
@@ -106,7 +113,7 @@ export default function WeightPage() {
     return getBMIRange(currentWeight.height, currentWeight.heightUnit || 'in');
   };
 
-  const getBMIRangeColor = (bmi: number, range: any) => {
+  const getBMIRangeColor = (bmi: number, range: BMIRange) => {
     if (bmi < range.normal.min) return 'text-blue-600';
     if (bmi <= range.normal.max) return 'text-green-600';
     if (bmi <= range.overweight.max) return 'text-yellow-600';

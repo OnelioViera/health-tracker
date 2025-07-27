@@ -35,66 +35,78 @@ const initialEvents = [
   {
     _id: "1",
     title: "Annual Physical",
-    type: "appointment",
+    type: "appointment" as const,
     date: "2024-01-15",
     time: "10:00 AM",
     doctor: "Dr. Sarah Johnson",
     location: "Medical Center",
-    status: "upcoming",
+    status: "upcoming" as const,
     color: "blue",
-    notes: "Annual checkup with blood work"
+    notes: "Annual checkup with blood work",
+    category: "appointment",
+    isCompleted: false
   },
   {
     _id: "2",
     title: "Blood Pressure Check",
-    type: "reminder",
+    type: "reminder" as const,
     date: "2024-01-12",
     time: "9:00 AM",
-    status: "completed",
+    status: "completed" as const,
     color: "green",
-    notes: "Weekly blood pressure monitoring"
+    notes: "Weekly blood pressure monitoring",
+    category: "reminder",
+    isCompleted: true
   },
   {
     _id: "3",
     title: "Blood Work Results",
-    type: "test",
+    type: "test" as const,
     date: "2024-01-10",
     time: "2:00 PM",
-    status: "completed",
+    status: "completed" as const,
     color: "purple",
-    notes: "Complete blood count results review"
+    notes: "Complete blood count results review",
+    category: "test",
+    isCompleted: true
   },
   {
     _id: "4",
     title: "Weight Check",
-    type: "reminder",
+    type: "reminder" as const,
     date: "2024-01-08",
     time: "8:00 AM",
-    status: "completed",
+    status: "completed" as const,
     color: "orange",
-    notes: "Monthly weight tracking"
+    notes: "Monthly weight tracking",
+    category: "reminder",
+    isCompleted: true
   },
   {
     _id: "5",
     title: "Dental Cleaning",
-    type: "appointment",
+    type: "appointment" as const,
     date: "2024-01-20",
     time: "3:30 PM",
     doctor: "Dr. Michael Chen",
     location: "Dental Clinic",
-    status: "upcoming",
+    status: "upcoming" as const,
     color: "blue",
-    notes: "Regular dental cleaning and checkup"
+    notes: "Regular dental cleaning and checkup",
+    category: "appointment",
+    isCompleted: false
   },
   {
     _id: "6",
     title: "Medication Refill",
-    type: "reminder",
+    type: "reminder" as const,
     date: "2024-01-18",
     time: "11:00 AM",
-    status: "upcoming",
+    status: "upcoming" as const,
     color: "red",
-    notes: "Prescription refill reminder"
+    notes: "Prescription refill reminder",
+    category: "reminder",
+    isCompleted: false
   }
 ];
 
@@ -105,15 +117,40 @@ const eventTypes = [
   { name: "Tests", value: "test" },
 ];
 
+interface CalendarEvent {
+  _id: string;
+  title: string;
+  description?: string;
+  date: string;
+  time?: string;
+  type: 'appointment' | 'reminder' | 'test' | 'medication' | 'other';
+  category: string;
+  isCompleted: boolean;
+  notes?: string;
+  status: 'upcoming' | 'completed' | 'cancelled';
+  color: string;
+  doctor?: string;
+  location?: string;
+}
+
+interface EventData {
+  title: string;
+  description?: string;
+  date: string;
+  time?: string;
+  type: 'appointment' | 'reminder' | 'test' | 'medication' | 'other';
+  category: string;
+  notes?: string;
+}
+
 export default function CalendarPage() {
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [selectedDay, setSelectedDay] = useState<number | null>(null);
-  const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [editingEvent, setEditingEvent] = useState<any>(null);
-  const [events, setEvents] = useState<any[]>([]);
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Fetch events from MongoDB
@@ -138,7 +175,7 @@ export default function CalendarPage() {
   };
 
   // Create new event
-  const createEvent = async (eventData: any) => {
+  const createEvent = async (eventData: EventData) => {
     try {
       const response = await fetch('/api/calendar-events', {
         method: 'POST',
@@ -164,7 +201,7 @@ export default function CalendarPage() {
   };
 
   // Update event
-  const updateEvent = async (eventId: string, eventData: any) => {
+  const updateEvent = async (eventId: string, eventData: EventData) => {
     try {
       const response = await fetch(`/api/calendar-events/${eventId}`, {
         method: 'PUT',
@@ -236,7 +273,6 @@ export default function CalendarPage() {
   }));
 
   const handleDayClick = (day: number) => {
-    setSelectedDay(day);
     const dayEvents = filteredEvents.filter(event => {
       const eventDate = new Date(event.date);
       const selectedYear = selectedDate.getFullYear();
@@ -251,12 +287,12 @@ export default function CalendarPage() {
     }
   };
 
-  const handleEventClick = (event: any) => {
+  const handleEventClick = (event: CalendarEvent) => {
     setSelectedEvent(event);
     setIsEventModalOpen(true);
   };
 
-  const handleEditEvent = (event: any) => {
+  const handleEditEvent = (event: CalendarEvent) => {
     setEditingEvent({ ...event });
     setIsEditMode(true);
   };
@@ -275,12 +311,30 @@ export default function CalendarPage() {
 
   const handleSaveEvent = async () => {
     try {
-      if (editingEvent._id) {
+      if (editingEvent?._id) {
         // Update existing event
-        await updateEvent(editingEvent._id, editingEvent);
-      } else {
+        const eventData: EventData = {
+          title: editingEvent.title,
+          description: editingEvent.description,
+          date: editingEvent.date,
+          time: editingEvent.time,
+          type: editingEvent.type,
+          category: editingEvent.category,
+          notes: editingEvent.notes
+        };
+        await updateEvent(editingEvent._id, eventData);
+      } else if (editingEvent) {
         // Create new event
-        await createEvent(editingEvent);
+        const eventData: EventData = {
+          title: editingEvent.title,
+          description: editingEvent.description,
+          date: editingEvent.date,
+          time: editingEvent.time,
+          type: editingEvent.type,
+          category: editingEvent.category,
+          notes: editingEvent.notes
+        };
+        await createEvent(eventData);
       }
       
       setIsEditMode(false);
@@ -704,7 +758,7 @@ export default function CalendarPage() {
                   <Label htmlFor="type">Event Type</Label>
                   <Select
                     value={editingEvent.type}
-                    onValueChange={(value) => setEditingEvent({ ...editingEvent, type: value })}
+                    onValueChange={(value) => setEditingEvent({ ...editingEvent, type: value as CalendarEvent['type'] })}
                   >
                     <SelectTrigger>
                       <SelectValue />

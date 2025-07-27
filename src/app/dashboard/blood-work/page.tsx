@@ -8,11 +8,19 @@ import Link from "next/link";
 import BackButton from "@/components/back-button";
 import { useState, useEffect } from "react";
 
+interface BloodWorkResult {
+  parameter: string;
+  value: number;
+  unit: string;
+  referenceRange: { min: number; max: number };
+  status: string;
+}
+
 interface BloodWorkRecord {
   _id: string;
   testName: string;
   testDate: string;
-  results: any[];
+  results: BloodWorkResult[];
   labName: string;
   doctorName?: string;
   notes?: string;

@@ -55,6 +55,17 @@ interface HealthDataSummary {
   };
 }
 
+interface DoctorVisit {
+  _id: string;
+  doctorName: string;
+  specialty: string;
+  visitDate: string;
+  visitType: string;
+  status: string;
+  diagnosis?: string;
+  cost?: number;
+}
+
 export default function HealthDataPage() {
   const [summary, setSummary] = useState<HealthDataSummary>({
     bloodPressure: { total: 0, trend: 'stable' },
@@ -89,12 +100,12 @@ export default function HealthDataPage() {
       const dvData = dvResponse.ok ? await dvResponse.json() : { data: [] };
       
       const now = new Date();
-      const upcomingVisits = dvData.data?.filter((visit: any) => {
+      const upcomingVisits = dvData.data?.filter((visit: DoctorVisit) => {
         const visitDate = new Date(visit.visitDate);
         return visit.status === 'scheduled' && visitDate >= now;
       }) || [];
       
-      const recentVisits = dvData.data?.filter((visit: any) => {
+      const recentVisits = dvData.data?.filter((visit: DoctorVisit) => {
         const visitDate = new Date(visit.visitDate);
         const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
         return visitDate >= thirtyDaysAgo;

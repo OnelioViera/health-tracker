@@ -60,7 +60,7 @@ const BloodWorkSchema = new mongoose.Schema({
 // Calculate status based on reference range
 BloodWorkSchema.pre('save', function(next) {
   this.results.forEach(result => {
-    if (result.referenceRange) {
+    if (result.referenceRange && result.referenceRange.min !== null && result.referenceRange.min !== undefined && result.referenceRange.max !== null && result.referenceRange.max !== undefined) {
       if (result.value < result.referenceRange.min) {
         result.status = 'low';
       } else if (result.value > result.referenceRange.max) {

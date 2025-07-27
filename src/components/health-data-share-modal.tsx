@@ -125,7 +125,7 @@ export default function HealthDataShareModal({ open, onOpenChange }: HealthDataS
             <span>Share Health Data</span>
           </DialogTitle>
           <DialogDescription>
-            Send your health data to trusted recipients via email. They'll receive a beautiful, modern email with your health information.
+            Send your health data to trusted recipients via email. They&apos;ll receive a beautiful, modern email with your health information.
           </DialogDescription>
         </DialogHeader>
 

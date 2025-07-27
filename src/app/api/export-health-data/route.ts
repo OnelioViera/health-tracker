@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { targetApp, dataTypes } = await request.json();
+    const { targetApp } = await request.json();
 
     // Export health data (this would typically fetch from your database)
     const exportData = {

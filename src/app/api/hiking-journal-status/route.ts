@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { getUserApiKey, hasUserApiKey } from '@/lib/api-key-manager';
+import { hasUserApiKey } from '@/lib/api-key-manager';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Get user ID from auth (even if we allow public access, we still want to check user-specific keys)
     const { userId } = await auth();

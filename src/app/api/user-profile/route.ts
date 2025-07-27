@@ -4,7 +4,7 @@ import connectDB from "@/lib/mongodb";
 import UserProfile from "@/lib/models/UserProfile";
 import { mockUserProfileStorage } from "@/lib/mock-storage";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const { userId } = await auth();
     if (!userId) {
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
           firstName: 'John',
           lastName: 'Doe',
           email: 'john.doe@example.com',
-          birthdate: null,
+          birthdate: undefined,
           address: {
             street: '',
             city: '',
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
         firstName: body.firstName || user.firstName || '',
         lastName: body.lastName || user.lastName || '',
         email: body.email || user.primaryEmailAddress?.emailAddress || '',
-        birthdate: body.birthdate ? new Date(body.birthdate) : null,
+        birthdate: body.birthdate ? new Date(body.birthdate) : undefined,
         address: body.address || {},
         phone: body.phone || '',
         emergencyContact: body.emergencyContact || {},
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
       userProfile.firstName = body.firstName || user.firstName || '';
       userProfile.lastName = body.lastName || user.lastName || '';
       userProfile.email = body.email || user.primaryEmailAddress?.emailAddress || '';
-      userProfile.birthdate = body.birthdate ? new Date(body.birthdate) : null;
+      userProfile.birthdate = body.birthdate ? new Date(body.birthdate) : undefined;
       userProfile.address = body.address || {};
       userProfile.phone = body.phone || '';
       userProfile.emergencyContact = body.emergencyContact || {};
@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
         firstName: body.firstName || user.firstName || '',
         lastName: body.lastName || user.lastName || '',
         email: body.email || user.primaryEmailAddress?.emailAddress || '',
-        birthdate: body.birthdate ? new Date(body.birthdate) : null,
+        birthdate: body.birthdate ? new Date(body.birthdate) : undefined,
         address: body.address || {},
         phone: body.phone || '',
         emergencyContact: body.emergencyContact || {},

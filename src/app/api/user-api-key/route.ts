@@ -6,7 +6,7 @@ import {
   deleteUserApiKey 
 } from '@/lib/api-key-manager';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const { userId } = await auth();
     if (!userId) {
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function DELETE(request: NextRequest) {
+export async function DELETE() {
   try {
     const { userId } = await auth();
     if (!userId) {

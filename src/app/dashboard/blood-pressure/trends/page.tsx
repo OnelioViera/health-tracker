@@ -372,7 +372,7 @@ export default function BloodPressureTrendsPage() {
               <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <h4 className="font-medium text-blue-900 mb-2">📊 Reading Pattern</h4>
                 <p className="text-sm text-blue-800">
-                  You're taking readings {readingFrequency} times per week on average. 
+                  You&apos;re taking readings {readingFrequency} times per week on average. 
                   {readingFrequency >= 3 ? ' This is a good frequency for monitoring.' : ' Consider increasing frequency for better tracking.'}
                 </p>
               </div>

@@ -252,7 +252,7 @@ export async function sendHealthDataSharingNotification(
   recipientEmail: string,
   recipientName: string,
   dataTypes: string[],
-  sharedData: any,
+  sharedData: Record<string, unknown>,
   expiresInDays: number,
   patientName: string = 'Patient',
   birthdate?: Date,

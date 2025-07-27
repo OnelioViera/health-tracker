@@ -9,6 +9,14 @@ import DoctorVisit from "@/lib/models/DoctorVisit";
 import BackButton from "@/components/back-button";
 import DoctorVisitActions from "@/components/doctor-visit-actions";
 
+interface Medication {
+  name: string;
+  dosage: string;
+  frequency: string;
+  duration: string;
+  notes?: string;
+}
+
 interface DoctorVisitData {
   _id: string;
   doctorName: string;
@@ -19,7 +27,7 @@ interface DoctorVisitData {
   symptoms: string[];
   diagnosis: string;
   treatment: string;
-  medications: any[];
+  medications: Medication[];
   recommendations: string[];
   followUpDate?: Date;
   notes: string;

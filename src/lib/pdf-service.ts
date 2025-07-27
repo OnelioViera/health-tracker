@@ -1,10 +1,51 @@
 import jsPDF from 'jspdf';
 
+interface BloodPressureRecord {
+  systolic: number;
+  diastolic: number;
+  pulse?: number;
+  date: string;
+  category: string;
+  notes?: string;
+}
+
+interface BloodWorkRecord {
+  testName: string;
+  testDate: string;
+  results: Array<{
+    parameter: string;
+    value: number;
+    unit: string;
+    referenceRange: { min: number; max: number };
+    status: string;
+  }>;
+  category: string;
+}
+
+interface DoctorVisitRecord {
+  doctorName: string;
+  specialty: string;
+  visitDate: string;
+  visitType: string;
+  status: string;
+  diagnosis?: string;
+  cost?: number;
+}
+
+interface WeightRecord {
+  weight: number;
+  height?: number;
+  unit: string;
+  heightUnit?: string;
+  date: string;
+  notes?: string;
+}
+
 export interface HealthData {
-  bloodPressure?: any[];
-  bloodWork?: any[];
-  doctorVisits?: any[];
-  weight?: any[];
+  bloodPressure?: BloodPressureRecord[];
+  bloodWork?: BloodWorkRecord[];
+  doctorVisits?: DoctorVisitRecord[];
+  weight?: WeightRecord[];
 }
 
 export interface PDFReportOptions {
@@ -47,12 +88,12 @@ export async function generateHealthDataPDF(options: PDFReportOptions): Promise<
   const addSection = (title: string, content: string, y: number) => {
     doc.setFontSize(16);
     doc.setTextColor(102, 126, 234); // Blue color
-    doc.setFont(undefined, 'bold');
+    doc.setFont('helvetica', 'bold');
     const titleHeight = addText(title, margin, y, contentWidth, 16);
     
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
-    doc.setFont(undefined, 'normal');
+    doc.setFont('helvetica', 'normal');
     const contentHeight = addText(content, margin, y + titleHeight + 5, contentWidth, 12);
     
     return titleHeight + contentHeight + 10;
@@ -64,11 +105,11 @@ export async function generateHealthDataPDF(options: PDFReportOptions): Promise<
   
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(24);
-  doc.setFont(undefined, 'bold');
+  doc.setFont('helvetica', 'bold');
   doc.text('MyHealthFirst', margin, 25);
   
   doc.setFontSize(14);
-  doc.setFont(undefined, 'normal');
+  doc.setFont('helvetica', 'normal');
   doc.text('Health Data Report', margin, 35);
   
   yPosition = 50;
@@ -130,7 +171,7 @@ export async function generateHealthDataPDF(options: PDFReportOptions): Promise<
   
   // Detailed Data Sections
   if (sharedData.bloodPressure && sharedData.bloodPressure.length > 0) {
-    const bpText = sharedData.bloodPressure.map((record: any) => {
+    const bpText = sharedData.bloodPressure.map((record: BloodPressureRecord) => {
       const date = new Date(record.date).toLocaleDateString();
       const bp = `${record.systolic}/${record.diastolic} mmHg`;
       const pulse = record.pulse ? `, Pulse: ${record.pulse} bpm` : '';
@@ -142,12 +183,12 @@ export async function generateHealthDataPDF(options: PDFReportOptions): Promise<
   }
   
   if (sharedData.bloodWork && sharedData.bloodWork.length > 0) {
-    const bwText = sharedData.bloodWork.map((record: any) => {
+    const bwText = sharedData.bloodWork.map((record: BloodWorkRecord) => {
       const date = new Date(record.testDate).toLocaleDateString();
       const test = record.testName;
-      const lab = record.labName;
-      const results = record.results ? ` - ${record.results}` : '';
-      const notes = record.notes ? ` (${record.notes})` : '';
+      const lab = record.results.length > 0 ? record.results[0].parameter : 'N/A'; // Assuming first result is lab name
+      const results = record.results.length > 0 ? ` - ${record.results[0].value}${record.results[0].unit}` : '';
+      const notes = record.results.length > 0 && record.results[0].status !== 'Normal' ? ` (${record.results[0].status})` : '';
       return `${date}: ${test} at ${lab}${results}${notes}`;
     }).join('\n');
     
@@ -155,28 +196,26 @@ export async function generateHealthDataPDF(options: PDFReportOptions): Promise<
   }
   
   if (sharedData.doctorVisits && sharedData.doctorVisits.length > 0) {
-    const dvText = sharedData.doctorVisits.map((record: any) => {
+    const dvText = sharedData.doctorVisits.map((record: DoctorVisitRecord) => {
       const date = new Date(record.visitDate).toLocaleDateString();
       const doctor = record.doctorName;
       const specialty = record.specialty;
       const type = record.visitType;
       const diagnosis = record.diagnosis ? ` - ${record.diagnosis}` : '';
-      const treatment = record.treatment ? ` (${record.treatment})` : '';
-      const notes = record.notes ? ` - ${record.notes}` : '';
-      return `${date}: ${doctor} (${specialty}) - ${type}${diagnosis}${treatment}${notes}`;
+      const treatment = record.cost ? ` ($${record.cost.toFixed(2)})` : '';
+      return `${date}: ${doctor} (${specialty}) - ${type}${diagnosis}${treatment}`;
     }).join('\n');
     
     yPosition += addSection('Doctor Visits', dvText, yPosition);
   }
   
   if (sharedData.weight && sharedData.weight.length > 0) {
-    const weightText = sharedData.weight.map((record: any) => {
+    const weightText = sharedData.weight.map((record: WeightRecord) => {
       const date = new Date(record.date).toLocaleDateString();
       const weight = `${record.weight} ${record.unit}`;
       const height = record.height ? `, Height: ${record.height} ${record.heightUnit}` : '';
-      const bmi = record.bmi ? `, BMI: ${record.bmi}` : '';
       const notes = record.notes ? ` - ${record.notes}` : '';
-      return `${date}: ${weight}${height}${bmi}${notes}`;
+      return `${date}: ${weight}${height}${notes}`;
     }).join('\n');
     
     yPosition += addSection('Weight & BMI Records', weightText, yPosition);
@@ -362,7 +401,7 @@ export function generateHealthDataHTML(options: PDFReportOptions): string {
           ${sharedData.bloodPressure && sharedData.bloodPressure.length > 0 ? `
             <div class="section">
               <h2>Blood Pressure Records</h2>
-              ${sharedData.bloodPressure.map((record: any) => `
+              ${sharedData.bloodPressure.map((record: BloodPressureRecord) => `
                 <p><strong>${record.date}:</strong> ${record.systolic}/${record.diastolic} mmHg${record.pulse ? `, Pulse: ${record.pulse} bpm` : ''}</p>
               `).join('')}
             </div>
@@ -371,8 +410,8 @@ export function generateHealthDataHTML(options: PDFReportOptions): string {
           ${sharedData.bloodWork && sharedData.bloodWork.length > 0 ? `
             <div class="section">
               <h2>Blood Work Results</h2>
-              ${sharedData.bloodWork.map((record: any) => `
-                <p><strong>${record.testName} (${record.testDate}):</strong> ${record.labName}</p>
+              ${sharedData.bloodWork.map((record: BloodWorkRecord) => `
+                <p><strong>${record.testName} (${record.testDate}):</strong> ${record.results.length > 0 ? record.results[0].parameter : 'N/A'}</p>
               `).join('')}
             </div>
           ` : ''}
@@ -380,7 +419,7 @@ export function generateHealthDataHTML(options: PDFReportOptions): string {
           ${sharedData.doctorVisits && sharedData.doctorVisits.length > 0 ? `
             <div class="section">
               <h2>Doctor Visits</h2>
-              ${sharedData.doctorVisits.map((record: any) => `
+              ${sharedData.doctorVisits.map((record: DoctorVisitRecord) => `
                 <p><strong>${record.visitDate}:</strong> ${record.doctorName} - ${record.specialty} (${record.visitType})</p>
               `).join('')}
             </div>
@@ -389,7 +428,7 @@ export function generateHealthDataHTML(options: PDFReportOptions): string {
           ${sharedData.weight && sharedData.weight.length > 0 ? `
             <div class="section">
               <h2>Weight & BMI Records</h2>
-              ${sharedData.weight.map((record: any) => `
+              ${sharedData.weight.map((record: WeightRecord) => `
                 <p><strong>${record.date}:</strong> ${record.weight} ${record.unit}${record.height ? `, Height: ${record.height} ${record.heightUnit}` : ''}</p>
               `).join('')}
             </div>

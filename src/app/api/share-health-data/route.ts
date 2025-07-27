@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { recipientEmail, recipientName, message, dataTypes, expiresInDays = 30 } = body;
+    const { recipientEmail, recipientName, dataTypes, expiresInDays = 30 } = body;
 
     if (!recipientEmail || !recipientName || !dataTypes || dataTypes.length === 0) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });

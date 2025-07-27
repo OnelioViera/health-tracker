@@ -1,23 +1,25 @@
 "use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import React, { useState, useEffect, useCallback } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { 
-  BarChart3, 
+  Activity, 
   TrendingUp, 
-  TrendingDown,
-  Activity,
-  Heart,
-  TrendingUp as TrendingUpIcon,
+  TrendingDown, 
+  Heart, 
+  Scale, 
+  Thermometer,
   Calendar,
-  Target,
+  Clock,
   AlertTriangle,
   CheckCircle,
-  Clock,
-  Loader2
-} from "lucide-react";
-import { useState, useEffect } from "react";
+  ArrowUp,
+  ArrowDown,
+  Minus
+} from 'lucide-react';
+import { Button } from "@/components/ui/button";
 import BackButton from "@/components/back-button";
 import Link from "next/link";
 
@@ -72,7 +74,7 @@ interface HealthMetrics {
   previous: string;
   trend: "up" | "down" | "stable";
   status: "normal" | "improving" | "warning" | "critical";
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   color: string;
 }
 
@@ -80,7 +82,7 @@ interface Insight {
   title: string;
   description: string;
   type: "positive" | "warning" | "reminder";
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   color: string;
 }
 
@@ -94,11 +96,7 @@ export default function AnalyticsPage() {
   const [healthMetrics, setHealthMetrics] = useState<HealthMetrics[]>([]);
   const [insights, setInsights] = useState<Insight[]>([]);
 
-  useEffect(() => {
-    fetchAllData();
-  }, []);
-
-  const fetchAllData = async () => {
+  const fetchAllData = useCallback(async () => {
     setLoading(true);
     try {
       const [bpResponse, weightResponse, bloodWorkResponse, doctorVisitsResponse] = await Promise.all([
@@ -129,7 +127,11 @@ export default function AnalyticsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchAllData();
+  }, [fetchAllData]);
 
   const calculateHealthMetrics = (bpData: BloodPressureData[], weightData: WeightData[]) => {
     const metrics: HealthMetrics[] = [];
@@ -327,7 +329,7 @@ export default function AnalyticsPage() {
         title: "Start Tracking",
         description: "Begin recording your health data to see personalized insights here.",
         type: "reminder",
-        icon: Target,
+        icon: Activity,
         color: "blue"
       });
     }
@@ -363,7 +365,7 @@ export default function AnalyticsPage() {
           </div>
         </div>
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+          <Activity className="h-8 w-8 animate-spin text-blue-500" />
         </div>
       </div>
     );
@@ -430,12 +432,12 @@ export default function AnalyticsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <BarChart3 className="h-5 w-5" />
+                <Activity className="h-5 w-5" />
                 <span>Health Trends</span>
               </CardTitle>
-              <CardDescription>
+              <p className="text-sm text-gray-600">
                 Your health metrics over time
-              </CardDescription>
+              </p>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -446,16 +448,7 @@ export default function AnalyticsPage() {
                       <span className="text-sm font-medium">Blood Pressure (Systolic)</span>
                       <span className="text-sm text-gray-500">{bloodPressureData[0].systolic} mmHg</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className={`h-2 rounded-full ${
-                          bloodPressureData[0].category === 'normal' ? 'bg-green-500' :
-                          bloodPressureData[0].category === 'elevated' ? 'bg-yellow-500' :
-                          'bg-red-500'
-                        }`} 
-                        style={{ width: `${Math.min((bloodPressureData[0].systolic / 140) * 100, 100)}%` }}
-                      ></div>
-                    </div>
+                    <Progress value={Math.min((bloodPressureData[0].systolic / 140) * 100, 100)} className="h-2" />
                   </div>
                 )}
 
@@ -466,9 +459,7 @@ export default function AnalyticsPage() {
                       <span className="text-sm font-medium">Weight</span>
                       <span className="text-sm text-gray-500">{weightData[0].weight} {weightData[0].unit}</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-blue-500 h-2 rounded-full" style={{ width: '78%' }}></div>
-                    </div>
+                    <Progress value={78} className="h-2" />
                   </div>
                 )}
 
@@ -479,9 +470,7 @@ export default function AnalyticsPage() {
                       <span className="text-sm font-medium">Heart Rate</span>
                       <span className="text-sm text-gray-500">{bloodPressureData[0].pulse} bpm</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-green-500 h-2 rounded-full" style={{ width: '90%' }}></div>
-                    </div>
+                    <Progress value={90} className="h-2" />
                   </div>
                 )}
               </div>
@@ -517,12 +506,12 @@ export default function AnalyticsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <BarChart3 className="h-5 w-5" />
+                <Activity className="h-5 w-5" />
                 <span>Insights</span>
               </CardTitle>
-              <CardDescription>
+              <p className="text-sm text-gray-600">
                 AI-powered health insights and recommendations
-              </CardDescription>
+              </p>
             </CardHeader>
             <CardContent className="space-y-4">
               {insights.map((insight, index) => (
@@ -555,12 +544,12 @@ export default function AnalyticsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Target className="h-5 w-5" />
+                <Activity className="h-5 w-5" />
                 <span>Goals Progress</span>
               </CardTitle>
-              <CardDescription>
+              <p className="text-sm text-gray-600">
                 Track your health goals and achievements
-              </CardDescription>
+              </p>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
@@ -576,9 +565,7 @@ export default function AnalyticsPage() {
                         }
                       </span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-blue-500 h-2 rounded-full" style={{ width: '75%' }}></div>
-                    </div>
+                    <Progress value={75} className="h-2" />
                   </div>
                 )}
 
@@ -591,14 +578,7 @@ export default function AnalyticsPage() {
                         {bloodPressureData[0].category === 'normal' ? '100%' : '75%'}
                       </span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className={`h-2 rounded-full ${
-                          bloodPressureData[0].category === 'normal' ? 'bg-green-500' : 'bg-yellow-500'
-                        }`} 
-                        style={{ width: bloodPressureData[0].category === 'normal' ? '100%' : '75%' }}
-                      ></div>
-                    </div>
+                    <Progress value={bloodPressureData[0].category === 'normal' ? 100 : 75} className="h-2" />
                   </div>
                 )}
 
@@ -610,9 +590,7 @@ export default function AnalyticsPage() {
                       {doctorVisitsData.filter(v => v.status === 'completed').length} completed
                     </span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-green-500 h-2 rounded-full" style={{ width: '60%' }}></div>
-                  </div>
+                  <Progress value={60} className="h-2" />
                 </div>
               </div>
             </CardContent>
@@ -625,17 +603,17 @@ export default function AnalyticsPage() {
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
-              <BarChart3 className="h-5 w-5 text-blue-500" />
+              <Activity className="h-5 w-5 text-blue-500" />
               <span>Export Report</span>
             </CardTitle>
-            <CardDescription>
+            <p className="text-sm text-gray-600">
               Download your health analytics report
-            </CardDescription>
+            </p>
           </CardHeader>
           <CardContent>
             <Link href="/dashboard/reports">
               <Button className="w-full">
-                <BarChart3 className="h-4 w-4 mr-2" />
+                <Activity className="h-4 w-4 mr-2" />
                 Export Report
               </Button>
             </Link>
@@ -645,17 +623,17 @@ export default function AnalyticsPage() {
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
-              <Target className="h-5 w-5 text-green-500" />
+              <Scale className="h-5 w-5 text-green-500" />
               <span>Set Goals</span>
             </CardTitle>
-            <CardDescription>
+            <p className="text-sm text-gray-600">
               Create new health goals and targets
-            </CardDescription>
+            </p>
           </CardHeader>
           <CardContent>
             <Link href="/dashboard/goals">
               <Button variant="outline" className="w-full">
-                <Target className="h-4 w-4 mr-2" />
+                <Scale className="h-4 w-4 mr-2" />
                 Set Goals
               </Button>
             </Link>
@@ -668,9 +646,9 @@ export default function AnalyticsPage() {
               <TrendingUp className="h-5 w-5 text-purple-500" />
               <span>View Trends</span>
             </CardTitle>
-            <CardDescription>
+            <p className="text-sm text-gray-600">
               Analyze detailed health trends
-            </CardDescription>
+            </p>
           </CardHeader>
           <CardContent>
             <Link href="/dashboard/blood-pressure/trends">

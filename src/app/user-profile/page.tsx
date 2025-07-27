@@ -292,14 +292,11 @@ export default function UserProfilePage() {
 
     setIsLoading(true);
     try {
-      await user?.update({
-        password: passwordData.newPassword,
-      });
+      // Clerk does not support updating password directly via user.update().
+      // Use Clerk's <UserProfile /> component or a custom password reset flow instead.
+      toast.info("Password changes must be done via Clerk's built-in UI or password reset flow.");
       setShowPasswordForm(false);
       setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
-      toast.success("Password Updated", {
-        description: "Your password has been updated successfully.",
-      });
     } catch (error) {
       console.error("Error updating password:", error);
       toast.error("Password Update Failed", {
@@ -307,20 +304,6 @@ export default function UserProfilePage() {
       });
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleEmailVerification = async () => {
-    try {
-      await user?.primaryEmailAddress?.createEmailVerification();
-      toast.success("Verification Email Sent", {
-        description: "Please check your email for verification instructions.",
-      });
-    } catch (error) {
-      console.error("Error sending verification email:", error);
-      toast.error("Verification Failed", {
-        description: "Failed to send verification email. Please try again.",
-      });
     }
   };
 
@@ -551,16 +534,10 @@ export default function UserProfilePage() {
                             Unverified
                           </Badge>
                         )}
-                        {!isEmailVerified && (
-                          <Button
-                            onClick={handleEmailVerification}
-                            size="sm"
-                            variant="outline"
-                            disabled={isLoading}
-                          >
-                            Verify
-                          </Button>
-                        )}
+                        {/*
+                          Email verification must be handled by Clerk's built-in UI (e.g., <UserProfile />)
+                          or via the sign-up/sign-in flows. Programmatic verification is not supported.
+                        */}
                       </div>
                     </div>
                   </div>

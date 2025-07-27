@@ -43,17 +43,27 @@ interface HealthGoal {
   updatedAt: string;
 }
 
+interface GoalData {
+  title: string;
+  description: string;
+  category: 'weight' | 'blood-pressure' | 'exercise' | 'nutrition' | 'general';
+  targetValue: number;
+  currentValue: number;
+  unit: string;
+  startDate: string;
+  targetDate: string;
+}
+
 export default function GoalsPage() {
   const [goals, setGoals] = useState<HealthGoal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [editingGoal, setEditingGoal] = useState<HealthGoal | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-
-  const [newGoal, setNewGoal] = useState({
+  const [editingGoal, setEditingGoal] = useState<HealthGoal | null>(null);
+  const [newGoal, setNewGoal] = useState<GoalData>({
     title: '',
     description: '',
-    category: 'general' as const,
+    category: 'general',
     targetValue: 0,
     currentValue: 0,
     unit: '',
@@ -92,7 +102,7 @@ export default function GoalsPage() {
     }
   };
 
-  const createGoal = async (goalData: any) => {
+  const createGoal = async (goalData: GoalData) => {
     try {
       const response = await fetch('/api/goals', {
         method: 'POST',
@@ -117,7 +127,7 @@ export default function GoalsPage() {
     }
   };
 
-  const updateGoal = async (goalId: string, goalData: any) => {
+  const updateGoal = async (goalId: string, goalData: GoalData) => {
     try {
       const response = await fetch(`/api/goals/${goalId}`, {
         method: 'PUT',
@@ -340,7 +350,7 @@ export default function GoalsPage() {
               
               <div>
                 <Label htmlFor="category">Category</Label>
-                <Select value={newGoal.category} onValueChange={(value: any) => setNewGoal({ ...newGoal, category: value })}>
+                <Select value={newGoal.category} onValueChange={(value: 'weight' | 'blood-pressure' | 'exercise' | 'nutrition' | 'general') => setNewGoal({ ...newGoal, category: value })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>

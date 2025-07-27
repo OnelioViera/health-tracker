@@ -23,33 +23,38 @@ interface BloodPressureReading {
   category: 'normal' | 'elevated' | 'high' | 'crisis';
 }
 
+interface ReadingData {
+  systolic: number;
+  diastolic: number;
+  pulse?: number;
+  date: string;
+  notes?: string;
+}
+
 export default function BloodPressurePage() {
   const [readings, setReadings] = useState<BloodPressureReading[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedReading, setSelectedReading] = useState<BloodPressureReading | null>(null);
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedReading, setSelectedReading] = useState<BloodPressureReading | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingReading, setEditingReading] = useState<BloodPressureReading | null>(null);
 
-  // Fetch readings from MongoDB
   const fetchReadings = async () => {
     try {
       const response = await fetch('/api/blood-pressure');
       if (response.ok) {
         const data = await response.json();
         setReadings(data.data || []);
-      } else {
-        console.error('Failed to fetch readings');
       }
     } catch (error) {
       console.error('Error fetching readings:', error);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   // Create new reading
-  const createReading = async (readingData: any) => {
+  const createReading = async (readingData: ReadingData) => {
     try {
       const response = await fetch('/api/blood-pressure', {
         method: 'POST',
@@ -75,7 +80,7 @@ export default function BloodPressurePage() {
   };
 
   // Update reading
-  const updateReading = async (readingId: string, readingData: any) => {
+  const updateReading = async (readingId: string, readingData: ReadingData) => {
     try {
       const response = await fetch(`/api/blood-pressure/${readingId}`, {
         method: 'PUT',
@@ -230,7 +235,7 @@ export default function BloodPressurePage() {
            readingDate.getFullYear() === now.getFullYear();
   }).length;
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
