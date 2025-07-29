@@ -261,7 +261,7 @@ export default function WeightPage() {
               <>
                 <div className="text-2xl font-bold">{currentBMI.toFixed(1)}</div>
                 <div className="flex items-center space-x-2 mb-2">
-                  <Badge variant="secondary" className={`text-xs ${getBMICategory(currentBMI).color}`}>
+                  <Badge variant={getBMICategory(currentBMI).color as "info" | "success" | "warning" | "danger"} className="text-xs">
                     {getBMICategory(currentBMI).category}
                   </Badge>
                   {getBMITrend() && (
@@ -337,19 +337,19 @@ export default function WeightPage() {
         </Card>
       </div>
 
-      {/* Progress Chart Placeholder */}
+      {/* Combined Weight History & Records */}
       <Card>
         <CardHeader>
-          <CardTitle>Weight Progress</CardTitle>
+          <CardTitle>Weight History & Records</CardTitle>
           <CardDescription>
-            Your weight tracking over the last 30 days
+            Your weight tracking over time with detailed records
           </CardDescription>
         </CardHeader>
         <CardContent>
           {weightRecords.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* Weight Trend Summary */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <div className="flex items-center space-x-2">
                     <Scale className="h-5 w-5 text-blue-600" />
@@ -383,31 +383,33 @@ export default function WeightPage() {
                 )}
               </div>
 
-              {/* Weight History Chart */}
-              <div className="h-64 bg-gray-50 rounded-lg p-4">
+              {/* Weight Records Display */}
+              <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Weight History</h3>
+                  <h3 className="text-lg font-semibold">Recent Records</h3>
                   <span className="text-sm text-gray-500">{weightRecords.length} records</span>
                 </div>
                 
-                {weightRecords.length > 1 ? (
-                  <div className="space-y-3">
+                <div className="overflow-x-auto">
+                  <div className="flex space-x-4 min-w-max">
                     {weightRecords.slice(0, 5).map((record, index) => {
-                      const previousRecord = weightRecords[index + 1];
-                      const weightTrend = previousRecord ? calculateTrend(record.weight, previousRecord.weight) : null;
                       const bmi = record.height 
                         ? calculateBMI(record.weight, record.height, record.unit, record.heightUnit || 'in')
                         : 0;
                       
+                      // Calculate trend from previous record
+                      const previousRecord = weightRecords[index + 1];
+                      const weightTrend = previousRecord ? calculateTrend(record.weight, previousRecord.weight) : null;
+                      
                       return (
-                        <div key={record._id} className="flex items-center justify-between p-3 bg-white rounded-lg border">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                              <Scale className="h-4 w-4 text-orange-600" />
+                        <div key={record._id} className="flex-shrink-0 w-80 p-4 bg-gray-50 rounded-lg border">
+                          <div className="flex items-center space-x-4">
+                            <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                              <Scale className="h-6 w-6 text-orange-600" />
                             </div>
-                            <div>
+                            <div className="flex-1 min-w-0">
                               <div className="flex items-center space-x-2">
-                                <span className="font-semibold">{record.weight} {record.unit}</span>
+                                <p className="text-lg font-semibold">{record.weight} {record.unit}</p>
                                 {weightTrend && (
                                   <div className="flex items-center space-x-1">
                                     {weightTrend.isPositive ? (
@@ -416,183 +418,69 @@ export default function WeightPage() {
                                       <ArrowDown className="h-3 w-3 text-green-500" />
                                     )}
                                     <span className={`text-xs ${weightTrend.isPositive ? 'text-red-500' : 'text-green-500'}`}>
-                                      {Math.abs(weightTrend.diff).toFixed(2)}
+                                      {Math.abs(weightTrend.diff).toFixed(1)}
                                     </span>
                                   </div>
                                 )}
                               </div>
-                              <div className="text-xs text-gray-500">
+                              <p className="text-sm text-gray-500">
                                 {formatDate(record.date)}
-                                {bmi > 0 && (
-                                  <span className="ml-2">• BMI: {bmi.toFixed(2)}</span>
+                                {record.height && (
+                                  <span className="ml-2">• Height: {record.height} {record.heightUnit || 'in'}</span>
                                 )}
-                              </div>
+                                {bmi > 0 && (
+                                  <span className="ml-2">• BMI: {bmi.toFixed(1)}</span>
+                                )}
+                              </p>
+                              {record.notes && (
+                                <p className="text-xs text-gray-500 truncate mt-1">{record.notes}</p>
+                              )}
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-sm font-medium text-gray-900">
-                              {record.height ? `${record.height} ${record.heightUnit || 'in'}` : 'No height'}
+                          <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200">
+                            <Badge variant="secondary">Record #{weightRecords.length - index}</Badge>
+                            <div className="flex items-center space-x-1">
+                              <Link href={`/dashboard/weight/edit/${record._id}`}>
+                                <Button variant="ghost" size="sm">
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </Link>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => handleDelete(record._id)}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             </div>
-                            {record.notes && (
-                              <div className="text-xs text-gray-500 truncate max-w-32">
-                                {record.notes}
-                              </div>
-                            )}
                           </div>
                         </div>
                       );
                     })}
                   </div>
-                ) : (
-                  <div className="h-full flex items-center justify-center">
-                    <div className="text-center text-gray-500">
-                      <TrendingUp className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                      <p>Add more weight records to see trends</p>
-                      <p className="text-sm">Currently showing {weightRecords.length} record</p>
-                    </div>
+                </div>
+                
+                {weightRecords.length === 1 && (
+                  <div className="text-center py-8">
+                    <TrendingUp className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                    <p className="text-gray-500">Add more weight records to see trends</p>
                   </div>
                 )}
               </div>
-
-              {/* Trend Analysis */}
-              {weightRecords.length > 1 && (
-                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                  <h4 className="font-medium mb-3">Trend Analysis</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <span className="text-sm text-gray-600">Weight Trend:</span>
-                      <div className="flex items-center space-x-2 mt-1">
-                        {weightChange > 0 ? (
-                          <ArrowUp className="h-4 w-4 text-red-500" />
-                        ) : weightChange < 0 ? (
-                          <ArrowDown className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <span className="text-gray-400">—</span>
-                        )}
-                        <span className={`font-medium ${weightChange > 0 ? 'text-red-600' : weightChange < 0 ? 'text-green-600' : 'text-gray-600'}`}>
-                          {weightChange > 0 ? 'Gaining' : weightChange < 0 ? 'Losing' : 'Stable'}
-                        </span>
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-600">BMI Trend:</span>
-                      <div className="flex items-center space-x-2 mt-1">
-                        {bmiChange > 0 ? (
-                          <ArrowUp className="h-4 w-4 text-red-500" />
-                        ) : bmiChange < 0 ? (
-                          <ArrowDown className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <span className="text-gray-400">—</span>
-                        )}
-                        <span className={`font-medium ${bmiChange > 0 ? 'text-red-600' : bmiChange < 0 ? 'text-green-600' : 'text-gray-600'}`}>
-                          {bmiChange > 0 ? 'Increasing' : bmiChange < 0 ? 'Decreasing' : 'Stable'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           ) : (
-            <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
-              <div className="text-center text-gray-500">
-                <Scale className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                <p>No weight records yet</p>
-                <p className="text-sm">Add your first weight reading to see progress</p>
-                <Link href="/dashboard/weight/new">
-                  <Button className="mt-4">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add First Reading
-                  </Button>
-                </Link>
-              </div>
+            <div className="text-center py-8">
+              <Scale className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+              <p className="text-gray-500">No weight records</p>
+              <p className="text-sm text-gray-400">Add your first weight record to get started</p>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Recent Weight Records */}
-      {weightRecords.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Weight Records</CardTitle>
-            <CardDescription>
-              Your latest weight and height measurements
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {weightRecords.slice(0, 5).map((record, index) => {
-                const bmi = record.height 
-                  ? calculateBMI(record.weight, record.height, record.unit, record.heightUnit || 'in')
-                  : 0;
-                
-                // Calculate trend from previous record
-                const previousRecord = weightRecords[index + 1];
-                const weightTrend = previousRecord ? calculateTrend(record.weight, previousRecord.weight) : null;
-                
-                return (
-                  <div key={record._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                        <Scale className="h-6 w-6 text-orange-600" />
-                      </div>
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <p className="text-lg font-semibold">{record.weight} {record.unit}</p>
-                          {weightTrend && (
-                            <div className="flex items-center space-x-1">
-                              {weightTrend.isPositive ? (
-                                <ArrowUp className="h-3 w-3 text-red-500" />
-                              ) : (
-                                <ArrowDown className="h-3 w-3 text-green-500" />
-                              )}
-                              <span className={`text-xs ${weightTrend.isPositive ? 'text-red-500' : 'text-green-500'}`}>
-                                {Math.abs(weightTrend.diff).toFixed(1)}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-500">
-                          {formatDate(record.date)}
-                          {record.height && (
-                            <span className="ml-2">• Height: {record.height} {record.heightUnit || 'in'}</span>
-                          )}
-                          {bmi > 0 && (
-                            <span className="ml-2">• BMI: {bmi.toFixed(1)}</span>
-                          )}
-                        </p>
-                        {record.notes && (
-                          <p className="text-xs text-gray-500">{record.notes}</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Badge variant="secondary">Record #{weightRecords.length - index}</Badge>
-                      <Link href={`/dashboard/weight/edit/${record._id}`}>
-                        <Button variant="ghost" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </Link>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => handleDelete(record._id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -628,6 +516,26 @@ export default function WeightPage() {
               <Button variant="outline" className="w-full">
                 <TrendingUp className="h-4 w-4 mr-2" />
                 View Trends
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              <span>Set Reminders</span>
+            </CardTitle>
+            <CardDescription>
+              Configure weight check reminders
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/dashboard/weight/reminders">
+              <Button variant="outline" className="w-full">
+                <AlertTriangle className="h-4 w-4 mr-2" />
+                Set Reminders
               </Button>
             </Link>
           </CardContent>

@@ -106,35 +106,12 @@ export default function UserProfilePage() {
 
   useEffect(() => {
     if (user) {
-      setFormData({
+      setFormData(prev => ({
+        ...prev,
         firstName: user.firstName || "",
         lastName: user.lastName || "",
         email: user.primaryEmailAddress?.emailAddress || "",
-        birthdate: "",
-        address: {
-          street: "",
-          city: "",
-          state: "",
-          zipCode: "",
-          country: "United States"
-        },
-        phone: "",
-        emergencyContact: {
-          name: "",
-          relationship: "",
-          phone: ""
-        },
-        insurance: {
-          policyNumber: "",
-          groupNumber: ""
-        },
-        medicalHistory: {
-          conditions: [],
-          allergies: [],
-          medications: [],
-          surgeries: []
-        }
-      });
+      }));
       
       // Fetch additional user profile data
       fetch('/api/user-profile')
@@ -144,6 +121,9 @@ export default function UserProfilePage() {
           if (data && !data.error) {
             setFormData(prev => ({
               ...prev,
+              firstName: data.firstName || user.firstName || "",
+              lastName: data.lastName || user.lastName || "",
+              email: data.email || user.primaryEmailAddress?.emailAddress || "",
               birthdate: data.birthdate ? new Date(data.birthdate).toISOString().split('T')[0] : "",
               address: data.address || {
                 street: "",
@@ -209,8 +189,32 @@ export default function UserProfilePage() {
     try {
       console.log('Saving form data:', formData);
       
-      // Only save additional profile data to our API
-      // Clerk user data (firstName, lastName) is managed separately
+      // Update Clerk user data (firstName, lastName, email)
+      if (formData.firstName !== user.firstName || 
+          formData.lastName !== user.lastName || 
+          formData.email !== user.primaryEmailAddress?.emailAddress) {
+        
+        const updateData: { firstName?: string; lastName?: string } = {};
+        if (formData.firstName !== user.firstName) {
+          updateData.firstName = formData.firstName;
+        }
+        if (formData.lastName !== user.lastName) {
+          updateData.lastName = formData.lastName;
+        }
+        
+        // Update Clerk user
+        await user.update(updateData);
+        
+        // Note: Email updates require special handling in Clerk
+        // For now, we'll show a message about email changes
+        if (formData.email !== user.primaryEmailAddress?.emailAddress) {
+          toast.info("Email Update", {
+            description: "Email address changes may require verification. Please check your email for verification instructions.",
+          });
+        }
+      }
+      
+      // Save additional profile data to our API
       const response = await fetch('/api/user-profile', {
         method: 'POST',
         headers: {
@@ -247,30 +251,12 @@ export default function UserProfilePage() {
       firstName: user?.firstName || "",
       lastName: user?.lastName || "",
       email: user?.primaryEmailAddress?.emailAddress || "",
-      birthdate: "",
-      address: {
-        street: "",
-        city: "",
-        state: "",
-        zipCode: "",
-        country: "United States"
-      },
-      phone: "",
-      emergencyContact: {
-        name: "",
-        relationship: "",
-        phone: ""
-      },
-      insurance: {
-        policyNumber: "",
-        groupNumber: ""
-      },
-      medicalHistory: {
-        conditions: [],
-        allergies: [],
-        medications: [],
-        surgeries: []
-      }
+      birthdate: formData.birthdate,
+      address: formData.address,
+      phone: formData.phone,
+      emergencyContact: formData.emergencyContact,
+      insurance: formData.insurance,
+      medicalHistory: formData.medicalHistory
     });
     setIsEditing(false);
   };
@@ -497,20 +483,20 @@ export default function UserProfilePage() {
                       <Input
                         id="firstName"
                         value={formData.firstName}
-                        disabled
-                        className="mt-1 bg-gray-50"
+                        onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                        disabled={!isEditing}
+                        className="mt-1"
                       />
-                      <p className="text-xs text-gray-500 mt-1">Managed by your account settings</p>
                     </div>
                     <div>
                       <Label htmlFor="lastName">Last Name</Label>
                       <Input
                         id="lastName"
                         value={formData.lastName}
-                        disabled
-                        className="mt-1 bg-gray-50"
+                        onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                        disabled={!isEditing}
+                        className="mt-1"
                       />
-                      <p className="text-xs text-gray-500 mt-1">Managed by your account settings</p>
                     </div>
                   </div>
                   <div className="mt-4">
@@ -519,8 +505,9 @@ export default function UserProfilePage() {
                       <Input
                         id="email"
                         value={formData.email}
-                        disabled
-                        className="flex-1 bg-gray-50"
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        disabled={!isEditing}
+                        className="flex-1"
                       />
                       <div className="flex items-center space-x-2">
                         {isEmailVerified ? (
@@ -534,10 +521,6 @@ export default function UserProfilePage() {
                             Unverified
                           </Badge>
                         )}
-                        {/*
-                          Email verification must be handled by Clerk's built-in UI (e.g., <UserProfile />)
-                          or via the sign-up/sign-in flows. Programmatic verification is not supported.
-                        */}
                       </div>
                     </div>
                   </div>

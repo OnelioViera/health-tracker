@@ -44,8 +44,21 @@ export async function PUT(
 
     await connectDB();
 
-    // Calculate updated progress
-    const progress = Math.min(Math.max((currentValue / targetValue) * 100, 0), 100);
+    // Calculate updated progress based on goal category
+    let progress = 0;
+    if (category === 'weight') {
+      // For weight goals, calculate progress based on weight loss
+      const startWeight = currentValue; // Current value is the start weight for weight goals
+      const weightDifference = startWeight - targetValue; // How much weight to lose
+      const currentProgress = startWeight - currentValue; // How much weight lost
+      
+      if (weightDifference > 0) {
+        progress = (currentProgress / weightDifference) * 100;
+      }
+    } else {
+      // For other goals, use standard progress calculation
+      progress = Math.min(Math.max((currentValue / targetValue) * 100, 0), 100);
+    }
     
     // Determine status based on dates and progress
     const now = new Date();

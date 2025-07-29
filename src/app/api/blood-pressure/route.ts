@@ -17,28 +17,40 @@ const mockBloodPressureData: Array<{
   updatedAt: Date;
 }> = [
   {
-    _id: 'mock_1',
+    _id: 'mock_latest',
     userId: 'user_123',
-    systolic: 120,
-    diastolic: 80,
-    pulse: 72,
-    date: new Date(),
+    systolic: 115,
+    diastolic: 73,
+    pulse: 65,
+    date: new Date('2025-07-27T08:31:00.000Z'),
     notes: 'Morning reading',
-    category: 'normal', // 120/80 is normal
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    category: 'normal', // 115/73 is normal
+    createdAt: new Date('2025-07-27T08:31:00.000Z'),
+    updatedAt: new Date('2025-07-27T08:31:00.000Z'),
   },
   {
-    _id: 'mock_2',
+    _id: 'mock_second',
     userId: 'user_123',
-    systolic: 135,
-    diastolic: 85,
-    pulse: 78,
-    date: new Date(Date.now() - 86400000), // 1 day ago
+    systolic: 114,
+    diastolic: 70,
+    pulse: 68,
+    date: new Date('2025-07-26T20:39:00.000Z'),
     notes: 'Evening reading',
-    category: 'high', // 135/85 is high
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    category: 'normal', // 114/70 is normal
+    createdAt: new Date('2025-07-26T20:39:00.000Z'),
+    updatedAt: new Date('2025-07-26T20:39:00.000Z'),
+  },
+  {
+    _id: 'mock_third',
+    userId: 'user_123',
+    systolic: 110,
+    diastolic: 78,
+    pulse: 72,
+    date: new Date('2025-07-25T18:00:00.000Z'),
+    notes: 'Evening reading',
+    category: 'normal', // 110/78 is normal
+    createdAt: new Date('2025-07-25T18:00:00.000Z'),
+    updatedAt: new Date('2025-07-25T18:00:00.000Z'),
   }
 ];
 

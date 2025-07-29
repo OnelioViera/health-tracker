@@ -17,11 +17,7 @@ import {
   ArrowLeft,
   Download,
   Trash2,
-  AlertTriangle,
-  Key,
-  Mountain,
-  CheckCircle,
-  XCircle
+  AlertTriangle
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -42,93 +38,6 @@ export default function UserSettingsPage() {
     dataSharing: false,
     analytics: true,
   });
-
-  // API Key Management State
-  const [apiKey, setApiKey] = useState("");
-  const [apiKeyInfo, setApiKeyInfo] = useState<{
-    hasApiKey: boolean;
-    apiKeyMasked: string | null;
-    lastUpdated: string | null;
-  } | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [showApiKey, setShowApiKey] = useState(false);
-
-  // Load API key info on component mount
-  useEffect(() => {
-    if (isLoaded && user) {
-      loadApiKeyInfo();
-    }
-  }, [isLoaded, user]);
-
-  const loadApiKeyInfo = async () => {
-    try {
-      const response = await fetch('/api/user-api-key');
-      if (response.ok) {
-        const data = await response.json();
-        setApiKeyInfo(data);
-      }
-    } catch (error) {
-      console.error('Error loading API key info:', error);
-    }
-  };
-
-  const saveApiKey = async () => {
-    if (!apiKey.trim()) {
-      toast.error('Please enter a valid API key');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/user-api-key', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ apiKey: apiKey.trim() }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setApiKeyInfo(data);
-        setApiKey("");
-        setShowApiKey(false);
-        toast.success('API key saved successfully');
-      } else {
-        const error = await response.json();
-        toast.error(error.message || 'Failed to save API key');
-      }
-    } catch (error) {
-      console.error('Error saving API key:', error);
-      toast.error('Failed to save API key');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const deleteApiKey = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/user-api-key', {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        setApiKeyInfo({ hasApiKey: false, apiKeyMasked: null, lastUpdated: null });
-        setApiKey("");
-        setShowApiKey(false);
-        toast.success('API key deleted successfully');
-      } else {
-        const error = await response.json();
-        toast.error(error.message || 'Failed to delete API key');
-      }
-    } catch (error) {
-      console.error('Error deleting API key:', error);
-      toast.error('Failed to delete API key');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   if (!isLoaded) {
     return (
@@ -154,147 +63,6 @@ export default function UserSettingsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Settings Sections */}
           <div className="lg:col-span-2 space-y-6">
-            {/* API Key Management */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Key className="h-5 w-5" />
-                  <span>Hiking Journal API Key</span>
-                </CardTitle>
-                <CardDescription>
-                  Connect your Hiking Journal app to sync exercise data automatically
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {apiKeyInfo?.hasApiKey ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 border rounded-lg bg-green-50">
-                      <div className="flex items-center space-x-3">
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                        <div>
-                          <h4 className="font-medium text-green-800">API Key Configured</h4>
-                          <p className="text-sm text-green-600">
-                            {apiKeyInfo.apiKeyMasked} • Last updated: {apiKeyInfo.lastUpdated ? new Date(apiKeyInfo.lastUpdated).toLocaleDateString() : 'Unknown'}
-                          </p>
-                        </div>
-                      </div>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => setShowApiKey(!showApiKey)}
-                        className="text-green-600 border-green-200 hover:bg-green-50"
-                      >
-                        {showApiKey ? 'Hide' : 'View'} Key
-                      </Button>
-                    </div>
-                    
-                    {showApiKey && (
-                      <div className="p-4 border rounded-lg bg-gray-50">
-                        <Label htmlFor="current-api-key" className="text-sm font-medium text-gray-700">
-                          Current API Key
-                        </Label>
-                        <div className="mt-2 flex items-center space-x-2">
-                          <Input
-                            id="current-api-key"
-                            type="text"
-                            value={apiKeyInfo.apiKeyMasked || ''}
-                            readOnly
-                            className="font-mono text-sm"
-                          />
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              navigator.clipboard.writeText(apiKeyInfo.apiKeyMasked || '');
-                              toast.success('API key copied to clipboard');
-                            }}
-                          >
-                            Copy
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div className="flex space-x-2">
-                      <Button 
-                        variant="outline" 
-                        onClick={() => setShowApiKey(false)}
-                        className="flex-1"
-                      >
-                        Update Key
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        onClick={deleteApiKey}
-                        disabled={isLoading}
-                        className="flex-1 text-red-600 border-red-200 hover:bg-red-50"
-                      >
-                        {isLoading ? 'Deleting...' : 'Delete Key'}
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 border rounded-lg bg-yellow-50">
-                      <div className="flex items-center space-x-3">
-                        <XCircle className="h-5 w-5 text-yellow-500" />
-                        <div>
-                          <h4 className="font-medium text-yellow-800">No API Key Configured</h4>
-                          <p className="text-sm text-yellow-600">
-                            Add your Hiking Journal API key to sync exercise data
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="space-y-3">
-                  <Label htmlFor="api-key" className="text-sm font-medium">
-                    {apiKeyInfo?.hasApiKey ? 'New API Key' : 'API Key'}
-                  </Label>
-                  <div className="flex space-x-2">
-                    <Input
-                      id="api-key"
-                      type="password"
-                      placeholder="Enter your Hiking Journal API key"
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      className="flex-1"
-                    />
-                    <Button 
-                      onClick={saveApiKey}
-                      disabled={isLoading || !apiKey.trim()}
-                    >
-                      {isLoading ? 'Saving...' : 'Save'}
-                    </Button>
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    Get your API key from the Hiking Journal app settings
-                  </p>
-                </div>
-
-                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="flex items-start space-x-2">
-                    <Mountain className="h-4 w-4 text-blue-500 mt-0.5" />
-                    <div className="text-sm text-blue-700">
-                      <p className="font-medium">How to get your API key:</p>
-                      <ol className="mt-1 space-y-1 text-xs">
-                        <li>1. Log into your Hiking Journal app</li>
-                        <li>2. Go to Settings or Developer section</li>
-                        <li>3. Generate an API token for external access</li>
-                        <li>4. Copy the token and paste it above</li>
-                      </ol>
-                      <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
-                        <p className="font-medium">⚠️ Important:</p>
-                        <p>The Hiking Journal app expects a JWT token (not a simple API key). The token should look like: <code className="bg-yellow-100 px-1 rounded">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</code></p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Notifications */}
             <Card>
               <CardHeader>
@@ -485,12 +253,6 @@ export default function UserSettingsPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Last Login</span>
                   <span className="text-sm text-gray-600">Today</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">API Key Status</span>
-                  <Badge variant={apiKeyInfo?.hasApiKey ? "default" : "secondary"}>
-                    {apiKeyInfo?.hasApiKey ? "Configured" : "Not Set"}
-                  </Badge>
                 </div>
               </CardContent>
             </Card>

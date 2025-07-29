@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,8 @@ import {
   Target, 
   Plus, 
   TrendingUp, 
+  TrendingDown, 
+  Calendar, 
   CheckCircle, 
   Clock, 
   AlertCircle,
@@ -22,7 +24,8 @@ import {
   Apple,
   RefreshCw
 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
@@ -43,7 +46,6 @@ interface HealthGoal {
   progress: number;
   createdAt: string;
   updatedAt: string;
-  startWeight?: number; // Add start weight for weight goals
 }
 
 interface GoalData {
@@ -55,7 +57,6 @@ interface GoalData {
   unit: string;
   startDate: string;
   targetDate: string;
-  startWeight?: number; // Add start weight for weight goals
 }
 
 interface LatestWeight {
@@ -81,7 +82,6 @@ export default function GoalsPage() {
     unit: '',
     startDate: new Date().toISOString().split('T')[0],
     targetDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    startWeight: 0,
   });
 
   // Helper function to safely parse number inputs
@@ -129,42 +129,19 @@ export default function GoalsPage() {
     }
   };
 
-  // Improved progress calculation for weight goals
-  const calculateProgressForWeightGoal = useCallback((targetValue: number, currentValue: number, startDate: string, startWeight?: number) => {
-    if (!targetValue || targetValue === 0) return 0;
-    
-    // Use the provided start weight or fall back to the fixed value
-    const actualStartWeight = startWeight || getStartWeightForGoal();
-    const weightDifference = actualStartWeight - targetValue; // How much weight to lose
-    const currentProgress = actualStartWeight - currentValue; // How much weight lost
-    
-    if (weightDifference <= 0) return 0; // No weight to lose
-    
-    const progress = (currentProgress / weightDifference) * 100;
-    return Math.min(Math.max(progress, 0), 100);
-  }, []);
-
   // Auto-update weight goals with latest weight
   useEffect(() => {
     if (latestWeight && goals.length > 0) {
       const updatedGoals = goals.map(goal => {
         if (goal.category === 'weight' && goal.unit === latestWeight.unit) {
           const newCurrentValue = latestWeight.weight;
-          const progress = calculateProgressForWeightGoal(goal.targetValue, newCurrentValue, goal.startDate, goal.startWeight);
-          
-          // For weight goals, only mark as completed when current weight reaches or goes below target weight
-          let newStatus = goal.status;
-          if (newCurrentValue <= goal.targetValue) {
-            newStatus = 'completed';
-          } else if (newCurrentValue > goal.targetValue) {
-            newStatus = 'active';
-          }
+          const progress = calculateProgressForWeightGoal(goal.targetValue, newCurrentValue, goal.startDate);
           
           return {
             ...goal,
             currentValue: newCurrentValue,
             progress: progress,
-            status: newStatus
+            status: progress >= 100 ? 'completed' : goal.status
           };
         }
         return goal;
@@ -172,15 +149,13 @@ export default function GoalsPage() {
       
       setGoals(updatedGoals);
     }
-  }, [latestWeight, goals, calculateProgressForWeightGoal]);
+  }, [latestWeight]);
 
   const createGoal = async (goalData: GoalData) => {
     try {
-      // For weight goals, use the latest weight as current value and set start weight
+      // For weight goals, use the latest weight as current value
       if (goalData.category === 'weight' && latestWeight && goalData.unit === latestWeight.unit) {
         goalData.currentValue = latestWeight.weight;
-        // Use provided startWeight if available, otherwise use current weight as start weight
-        goalData.startWeight = goalData.startWeight || latestWeight.weight;
       }
 
       const response = await fetch('/api/goals', {
@@ -193,7 +168,7 @@ export default function GoalsPage() {
 
       if (response.ok) {
         const newGoal = await response.json();
-        setGoals(prev => [...prev, newGoal]); // Add to end instead of beginning
+        setGoals(prev => [newGoal, ...prev]);
         toast.success('Goal created successfully');
         return newGoal;
       } else {
@@ -211,7 +186,6 @@ export default function GoalsPage() {
       // For weight goals, use the latest weight as current value
       if (goalData.category === 'weight' && latestWeight && goalData.unit === latestWeight.unit) {
         goalData.currentValue = latestWeight.weight;
-        // Don't update startWeight when editing - keep the original
       }
 
       const response = await fetch(`/api/goals/${goalId}`, {
@@ -271,7 +245,6 @@ export default function GoalsPage() {
         unit: '',
         startDate: new Date().toISOString().split('T')[0],
         targetDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        startWeight: 0,
       });
     } catch (error) {
       // Error is already handled in createGoal function
@@ -298,6 +271,20 @@ export default function GoalsPage() {
         // Error is already handled in deleteGoal function
       }
     }
+  };
+
+  // Improved progress calculation for weight goals
+  const calculateProgressForWeightGoal = (targetValue: number, currentValue: number, startDate: string) => {
+    if (!targetValue || targetValue === 0) return 0;
+    
+    const startWeight = latestWeight?.weight || currentValue; // Use latest weight as start weight
+    const weightDifference = startWeight - targetValue; // How much weight to lose
+    const currentProgress = startWeight - currentValue; // How much weight lost
+    
+    if (weightDifference <= 0) return 0; // No weight to lose
+    
+    const progress = (currentProgress / weightDifference) * 100;
+    return Math.min(Math.max(progress, 0), 100);
   };
 
   const getCategoryIcon = (category: string) => {
@@ -354,7 +341,7 @@ export default function GoalsPage() {
 
   const calculateProgress = (goal: HealthGoal) => {
     if (goal.category === 'weight') {
-      return calculateProgressForWeightGoal(goal.targetValue, goal.currentValue, goal.startDate, goal.startWeight);
+      return calculateProgressForWeightGoal(goal.targetValue, goal.currentValue, goal.startDate);
     }
     
     // Handle edge cases that could result in NaN
@@ -378,17 +365,10 @@ export default function GoalsPage() {
     return diffDays;
   };
 
-  // Get start weight for weight goals - this should be the initial weight when goal was created
-  const getStartWeightForGoal = () => {
-    // For now, we'll use a fixed start weight of 209 as mentioned by the user
-    // In a real implementation, this should be stored when the goal is created
-    return 209;
-  };
-
   // Get start weight for weight goals
   const getStartWeight = (goal: HealthGoal) => {
-    if (goal.category === 'weight') {
-      return goal.startWeight || getStartWeightForGoal(); // Use stored start weight or fallback
+    if (goal.category === 'weight' && latestWeight) {
+      return latestWeight.weight;
     }
     return goal.currentValue;
   };
@@ -510,22 +490,6 @@ export default function GoalsPage() {
                   </div>
                 </div>
                 
-                {newGoal.category === 'weight' && (
-                  <div>
-                    <Label htmlFor="startWeight">Start Weight (when goal was created)</Label>
-                    <Input
-                      id="startWeight"
-                      type="number"
-                      value={formatNumberForDisplay(newGoal.startWeight || 0)}
-                      onChange={(e) => setNewGoal({ ...newGoal, startWeight: parseNumberInput(e.target.value) })}
-                      placeholder="e.g., 209"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      This is your weight when you started this goal. Will be set to current weight if not specified.
-                    </p>
-                  </div>
-                )}
-                
                 <div>
                   <Label htmlFor="unit">Unit</Label>
                   <Input
@@ -573,7 +537,6 @@ export default function GoalsPage() {
             </DialogContent>
           </Dialog>
         </div>
-      </div>
 
       {/* Goals Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -638,8 +601,7 @@ export default function GoalsPage() {
           goals.map((goal) => (
             <Card key={goal._id} className="hover:shadow-lg transition-shadow">
               <CardContent className="p-6">
-                {/* Header Section */}
-                <div className="flex items-start justify-between mb-6">
+                <div className="flex items-start justify-between">
                   <div className="flex items-start space-x-4">
                     <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
                       {getCategoryIcon(goal.category)}
@@ -657,7 +619,38 @@ export default function GoalsPage() {
                       
                       <p className="text-gray-600 mb-3">{goal.description}</p>
                       
-                      <div className="flex items-center space-x-4 text-xs text-gray-500">
+                      {/* Use WeightGoalChart for weight goals */}
+                      {goal.category === 'weight' ? (
+                        <WeightGoalChart
+                          startWeight={getStartWeight(goal)}
+                          currentWeight={goal.currentValue}
+                          targetWeight={goal.targetValue}
+                          unit={goal.unit}
+                          progress={calculateProgress(goal)}
+                          daysRemaining={getDaysRemaining(goal.targetDate)}
+                          startDate={goal.startDate}
+                          targetDate={goal.targetDate}
+                        />
+                      ) : (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span>Progress</span>
+                            <span className="font-medium">{calculateProgress(goal).toFixed(1)}%</span>
+                          </div>
+                          <Progress 
+                            value={calculateProgress(goal)} 
+                            variant={goal.status === 'completed' ? 'success' : goal.status === 'overdue' ? 'danger' : 'info'}
+                            className="h-2" 
+                          />
+                          <div className="flex items-center justify-between text-sm text-gray-500">
+                            <span>{goal.currentValue} {goal.unit}</span>
+                            <ArrowRight className="h-4 w-4" />
+                            <span>{goal.targetValue} {goal.unit}</span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center space-x-4 mt-4 text-xs text-gray-500">
                         <span>Start: {new Date(goal.startDate).toLocaleDateString()}</span>
                         <span>Target: {new Date(goal.targetDate).toLocaleDateString()}</span>
                         <span>{getDaysRemaining(goal.targetDate)} days remaining</span>
@@ -686,37 +679,6 @@ export default function GoalsPage() {
                     </Button>
                   </div>
                 </div>
-                
-                {/* Progress Section - Full Width */}
-                {goal.category === 'weight' ? (
-                  <WeightGoalChart
-                    startWeight={getStartWeight(goal)}
-                    currentWeight={goal.currentValue}
-                    targetWeight={goal.targetValue}
-                    unit={goal.unit}
-                    progress={calculateProgress(goal)}
-                    daysRemaining={getDaysRemaining(goal.targetDate)}
-                    startDate={goal.startDate}
-                    targetDate={goal.targetDate}
-                  />
-                ) : (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span>Progress</span>
-                      <span className="font-medium">{calculateProgress(goal).toFixed(1)}%</span>
-                    </div>
-                    <Progress 
-                      value={calculateProgress(goal)} 
-                      variant={goal.status === 'completed' ? 'success' : goal.status === 'overdue' ? 'danger' : 'info'}
-                      className="h-2" 
-                    />
-                    <div className="flex items-center justify-between text-sm text-gray-500">
-                      <span>{goal.currentValue} {goal.unit}</span>
-                      <ArrowRight className="h-4 w-4" />
-                      <span>{goal.targetValue} {goal.unit}</span>
-                    </div>
-                  </div>
-                )}
               </CardContent>
             </Card>
           ))

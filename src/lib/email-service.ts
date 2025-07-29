@@ -33,6 +33,11 @@ export class GmailEmailService implements EmailService {
   private transporter: nodemailer.Transporter;
 
   constructor() {
+    console.log('GmailEmailService constructor - Environment variables:');
+    console.log('GMAIL_USER:', process.env.GMAIL_USER);
+    console.log('GMAIL_APP_PASSWORD:', process.env.GMAIL_APP_PASSWORD ? 'SET' : 'NOT SET');
+    console.log('FROM_EMAIL:', process.env.FROM_EMAIL);
+    
     this.transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -106,26 +111,47 @@ export class ResendEmailService implements EmailService {
   }
 }
 
-// Mock email service for development
+// Mock email service for development/testing
 export class MockEmailService implements EmailService {
   async sendEmail(content: EmailContent): Promise<EmailResult> {
-    console.log('📧 Mock Email Service - Sending email:');
-    console.log('To:', content.to);
-    console.log('Subject:', content.subject);
-    console.log('HTML Preview:', content.html.substring(0, 200) + '...');
-    
-    if (content.attachments) {
-      console.log('📎 Attachments:', content.attachments.map(a => a.filename));
-    }
-    
-    // Simulate email sending delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    console.log('Mock email sent:', {
+      to: content.to,
+      subject: content.subject,
+      html: content.html.substring(0, 100) + '...'
+    });
     
     return {
       success: true,
       messageId: `mock_${Date.now()}`
     };
   }
+}
+
+// Default email service function
+export async function sendEmail(content: EmailContent): Promise<EmailResult> {
+  let emailService: EmailService;
+
+  console.log('Email service selection:', {
+    NODE_ENV: process.env.NODE_ENV,
+    RESEND_API_KEY: process.env.RESEND_API_KEY ? 'SET' : 'NOT SET',
+    GMAIL_USER: process.env.GMAIL_USER ? 'SET' : 'NOT SET',
+    GMAIL_APP_PASSWORD: process.env.GMAIL_APP_PASSWORD ? 'SET' : 'NOT SET',
+    FROM_EMAIL: process.env.FROM_EMAIL
+  });
+
+  // Choose email service based on environment
+  if (process.env.NODE_ENV === 'production' && process.env.RESEND_API_KEY) {
+    console.log('Using ResendEmailService');
+    emailService = new ResendEmailService();
+  } else if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+    console.log('Using GmailEmailService');
+    emailService = new GmailEmailService();
+  } else {
+    console.log('Using MockEmailService');
+    emailService = new MockEmailService();
+  }
+
+  return await emailService.sendEmail(content);
 }
 
 // SendGrid integration (uncomment and configure for production)
@@ -228,24 +254,6 @@ export class SESEmailService implements EmailService {
   }
 }
 */
-
-// Export the email service instance
-// Priority: Resend > Gmail > Mock
-const resendApiKey = process.env.RESEND_API_KEY;
-const gmailUser = process.env.GMAIL_USER;
-const gmailPassword = process.env.GMAIL_APP_PASSWORD;
-
-let selectedService: EmailService;
-
-if (resendApiKey) {
-  selectedService = new ResendEmailService();
-} else if (gmailUser && gmailPassword) {
-  selectedService = new GmailEmailService();
-} else {
-  selectedService = new MockEmailService();
-}
-
-export const emailService = selectedService;
 
 // Helper function to send health data sharing notifications with PDF
 export async function sendHealthDataSharingNotification(
@@ -531,5 +539,5 @@ export async function sendHealthDataSharingNotification(
     ]
   };
 
-  return await emailService.sendEmail(emailContent);
+  return await sendEmail(emailContent);
 } 

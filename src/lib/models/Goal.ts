@@ -17,7 +17,8 @@ const GoalSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['weight', 'blood-pressure', 'exercise', 'nutrition', 'general'],
+    required: true,
+    enum: ['weight', 'blood-pressure', 'nutrition', 'general'],
     default: 'general',
   },
   targetValue: {

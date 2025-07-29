@@ -15,7 +15,6 @@ import {
   FileText,
   Scale,
   Target,
-  Mountain,
 } from "lucide-react";
 
 const navigation = [
@@ -38,11 +37,6 @@ const navigation = [
     name: "Weight & Body",
     href: "/dashboard/weight",
     icon: Scale,
-  },
-  {
-    name: "Exercise",
-    href: "/dashboard/exercise",
-    icon: Mountain,
   },
   {
     name: "Doctor Visits",

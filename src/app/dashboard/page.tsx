@@ -3,29 +3,30 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { 
   Activity, 
   TrendingUp, 
-  Stethoscope, 
+  TrendingDown, 
   Heart, 
-  Plus,
+  Scale, 
+  Thermometer,
   Calendar,
-  AlertCircle,
+  Clock,
+  AlertTriangle,
   CheckCircle,
-  Scale,
-  FileText,
-  RefreshCw,
-  ChevronDown,
-  TrendingDown,
-  Minus,
   ArrowUp,
   ArrowDown,
-  Users,
+  Minus,
+  Plus,
+  FileText,
+  Stethoscope,
   Target,
-  Mountain
+  TrendingUp as TrendingUpIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { 
@@ -35,7 +36,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import SyncToHikingJournal from "@/components/sync-to-hiking-journal";
+import DashboardAppointmentCard from "@/components/dashboard-appointment-card";
 
 interface BloodPressureReading {
   _id: string;
@@ -218,26 +219,26 @@ export default function DashboardPage() {
     
     // For weight records, show only the actual date and time
     if (diffDays === 0) {
-      return `${date.toLocaleDateString()} at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      return `${date.toLocaleDateString()} at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}`;
     }
     if (diffDays === 1) {
-      return `${date.toLocaleDateString()} at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      return `${date.toLocaleDateString()} at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}`;
     }
     if (diffDays === -1) {
-      return `${date.toLocaleDateString()} at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      return `${date.toLocaleDateString()} at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}`;
     }
     
     if (diffDays > 0) {
       // Future date
       if (diffDays < 7) {
-        return `${date.toLocaleDateString()} at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+        return `${date.toLocaleDateString()} at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}`;
       }
       return date.toLocaleDateString();
     } else {
       // Past date
       const absDiffDays = Math.abs(diffDays);
       if (absDiffDays < 7) {
-        return `${date.toLocaleDateString()} at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+        return `${date.toLocaleDateString()} at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}`;
       }
       return date.toLocaleDateString();
     }
@@ -351,7 +352,7 @@ export default function DashboardPage() {
         </div>
         <div className="flex space-x-2">
           <Button onClick={fetchLatestData}>
-            <RefreshCw className="h-4 w-4 mr-2" />
+            <TrendingUpIcon className="h-4 w-4 mr-2" />
             Refresh
           </Button>
           <Button onClick={scrollToQuickActions}>
@@ -385,7 +386,7 @@ export default function DashboardPage() {
                   )}
                 </div>
                 <div className="text-xs text-gray-500">
-                  {new Date(dashboardData.bloodPressure.date).toLocaleDateString()} at {new Date(dashboardData.bloodPressure.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                  {new Date(dashboardData.bloodPressure.date).toLocaleDateString()} at {new Date(dashboardData.bloodPressure.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true})}
                 </div>
               </div>
 
@@ -592,17 +593,7 @@ export default function DashboardPage() {
                 <div className="mt-3">
                   {/* Show the soonest appointment */}
                   {dashboardData.upcomingVisits[0] && (
-                    <div className="p-3 bg-blue-50 rounded-lg border border-blue-200 mb-3">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <Stethoscope className="h-4 w-4 text-blue-600" />
-                        <span className="text-sm font-medium text-blue-900">
-                          {dashboardData.upcomingVisits[0].visitType} - {dashboardData.upcomingVisits[0].specialty}
-                        </span>
-                      </div>
-                      <div className="text-xs text-blue-700">
-                        <div className="font-medium">{dashboardData.upcomingVisits[0].doctorName}</div>
-                      </div>
-                    </div>
+                    <DashboardAppointmentCard visit={dashboardData.upcomingVisits[0]} />
                   )}
                   {/* View All button */}
                   {dashboardData.upcomingVisits.length > 1 && (
@@ -678,11 +669,11 @@ export default function DashboardPage() {
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
-              <Scale className="h-5 w-5 text-orange-500" />
-              <span>Weight</span>
+              <Scale className="h-5 w-5 text-blue-500" />
+              <span>Weight & Body</span>
             </CardTitle>
             <CardDescription>
-              Log your current weight and body composition
+              Track your weight and body measurements
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -690,26 +681,6 @@ export default function DashboardPage() {
               <Button className="w-full">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Weight
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Mountain className="h-5 w-5 text-green-500" />
-              <span>Exercise</span>
-            </CardTitle>
-            <CardDescription>
-              Track your hiking and fitness activities
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/dashboard/exercise">
-              <Button variant="outline" className="w-full">
-                <Mountain className="h-4 w-4 mr-2" />
-                View Activities
               </Button>
             </Link>
           </CardContent>
@@ -834,8 +805,6 @@ export default function DashboardPage() {
             </Link>
           </CardContent>
         </Card>
-
-        <SyncToHikingJournal />
       </div>
 
       {/* Recent Activity */}
@@ -934,7 +903,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="flex items-center space-x-4 p-3 bg-yellow-50 rounded-lg">
-              <AlertCircle className="h-5 w-5 text-yellow-500" />
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
               <div className="flex-1">
                 <p className="text-sm font-medium">Set Reminders</p>
                 <p className="text-xs text-gray-500">Configure health reminders</p>

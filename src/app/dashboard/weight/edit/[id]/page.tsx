@@ -29,6 +29,32 @@ export default function EditWeightPage() {
   
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Helper functions for time format conversion
+  const convert24HourTo12Hour = (time24Hour: string): string => {
+    const [hours, minutes] = time24Hour.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+    return `${displayHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${period}`;
+  };
+
+  const convert12HourTo24Hour = (time12Hour: string): string => {
+    const match = time12Hour.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (!match) return time12Hour; // Return as-is if not in expected format
+    
+    let hour = parseInt(match[1]);
+    const minute = parseInt(match[2]);
+    const period = match[3].toUpperCase();
+    
+    if (period === 'PM' && hour !== 12) {
+      hour += 12;
+    } else if (period === 'AM' && hour === 12) {
+      hour = 0;
+    }
+    
+    return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+  };
+
   const [formData, setFormData] = useState({
     weight: "",
     height: "",
@@ -52,7 +78,7 @@ export default function EditWeightPage() {
             unit: record.unit,
             heightUnit: record.heightUnit || "in", // Default height unit if missing
             date: date.toISOString().split('T')[0],
-            time: date.toTimeString().slice(0, 5),
+            time: convert24HourTo12Hour(date.toTimeString().slice(0, 5)),
             notes: record.notes || "",
           });
         } else {
@@ -163,7 +189,7 @@ export default function EditWeightPage() {
       }
 
       // Create a proper date object and convert to ISO string to avoid timezone issues
-      const dateTime = new Date(`${formData.date}T${formData.time}`);
+      const dateTime = new Date(`${formData.date}T${convert12HourTo24Hour(formData.time)}`);
       
       const response = await fetch(`/api/weight/${recordId}`, {
         method: 'PUT',
@@ -289,13 +315,63 @@ export default function EditWeightPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="time">Time</Label>
-                <Input
-                  id="time"
-                  type="time"
-                  value={formData.time}
-                  onChange={(e) => handleInputChange('time', e.target.value)}
-                  required
-                />
+                <div className="flex space-x-2">
+                  <Select 
+                    value={formData.time ? formData.time.split(':')[0] : '12'}
+                    onValueChange={(hour) => {
+                      const currentTime = formData.time || '12:00 AM';
+                      const [_, minute, period] = currentTime.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i) || ['', '00', 'AM'];
+                      handleInputChange('time', `${hour}:${minute} ${period}`);
+                    }}
+                  >
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({length: 12}, (_, i) => i + 1).map(hour => (
+                        <SelectItem key={hour} value={hour.toString().padStart(2, '0')}>
+                          {hour}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <span className="flex items-center">:</span>
+                  <Select 
+                    value={formData.time ? formData.time.split(':')[1]?.split(' ')[0] : '00'}
+                    onValueChange={(minute) => {
+                      const currentTime = formData.time || '12:00 AM';
+                      const [hour, _, period] = currentTime.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i) || ['12', '00', 'AM'];
+                      handleInputChange('time', `${hour}:${minute} ${period}`);
+                    }}
+                  >
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({length: 60}, (_, i) => i).map(minute => (
+                        <SelectItem key={minute} value={minute.toString().padStart(2, '0')}>
+                          {minute.toString().padStart(2, '0')}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select 
+                    value={formData.time ? formData.time.split(' ')[1] : 'AM'}
+                    onValueChange={(period) => {
+                      const currentTime = formData.time || '12:00 AM';
+                      const [hour, minute] = currentTime.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i) || ['12', '00'];
+                      handleInputChange('time', `${hour}:${minute} ${period}`);
+                    }}
+                  >
+                    <SelectTrigger className="w-16">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="AM">AM</SelectItem>
+                      <SelectItem value="PM">PM</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
 

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, MoreHorizontal } from "lucide-react";
+import { Edit, Trash2, MoreHorizontal, Eye } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +21,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import AppointmentDetailsModal from "./appointment-details-modal";
 
 interface DoctorVisitActionsProps {
   visitId: string;
@@ -30,9 +31,14 @@ export default function DoctorVisitActions({ visitId }: DoctorVisitActionsProps)
   const router = useRouter();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   const handleEdit = () => {
     router.push(`/dashboard/doctor-visits/edit/${visitId}`);
+  };
+
+  const handleViewDetails = () => {
+    setIsDetailsModalOpen(true);
   };
 
   const handleDelete = async () => {
@@ -68,6 +74,10 @@ export default function DoctorVisitActions({ visitId }: DoctorVisitActionsProps)
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={handleViewDetails}>
+            <Eye className="h-4 w-4 mr-2" />
+            View Details
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={handleEdit}>
             <Edit className="h-4 w-4 mr-2" />
             Edit
@@ -102,6 +112,12 @@ export default function DoctorVisitActions({ visitId }: DoctorVisitActionsProps)
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AppointmentDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
+        appointmentId={visitId}
+      />
     </>
   );
 } 

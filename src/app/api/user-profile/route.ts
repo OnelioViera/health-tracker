@@ -13,56 +13,33 @@ export async function GET() {
 
     const db = await connectDB();
     
-    // If using mock connection, return mock data
+    // If using mock connection, return default profile
     if (db.connection?.readyState === 1 && !process.env.MONGODB_URI?.startsWith('mongodb')) {
-      let mockUserProfile = mockUserProfileStorage.get();
-      
-      if (!mockUserProfile) {
-        // Return default mock data if no profile exists
-        mockUserProfile = {
-          _id: 'mock_profile',
+      return NextResponse.json({
+        success: true,
+        profile: {
           userId,
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john.doe@example.com',
-          birthdate: undefined,
-          address: {
-            street: '',
-            city: '',
-            state: '',
-            zipCode: '',
-            country: 'United States'
-          },
-          phone: '',
-          emergencyContact: {
-            name: '',
-            relationship: '',
-            phone: ''
-          },
-          insurance: {
-            policyNumber: '',
-            groupNumber: ''
-          },
-          medicalHistory: {
-            conditions: [],
-            allergies: [],
-            medications: [],
-            surgeries: []
-          },
+          firstName: user.firstName || 'User',
+          lastName: user.lastName || '',
+          email: user.emailAddresses[0]?.emailAddress || '',
           preferences: {
             healthDataSharing: true,
             notifications: {
               email: true,
               push: false,
-              reminders: true
+              reminders: true,
+              bloodPressure: {
+                pushNotifications: true,
+                emailNotifications: true,
+                smsNotifications: false,
+                quietHours: false,
+                quietHoursStart: '10:00 PM',
+                quietHoursEnd: '8:00 AM'
+              }
             }
-          },
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-      }
-      
-      return NextResponse.json(mockUserProfile);
+          }
+        }
+      });
     }
 
     const userProfile = await UserProfile.findOne({ userId });
@@ -119,7 +96,15 @@ export async function POST(request: NextRequest) {
           notifications: {
             email: true,
             push: false,
-            reminders: true
+            reminders: true,
+            bloodPressure: {
+              pushNotifications: true,
+              emailNotifications: true,
+              smsNotifications: false,
+              quietHours: false,
+              quietHoursStart: '22:00',
+              quietHoursEnd: '08:00'
+            }
           }
         },
         createdAt: new Date(),
@@ -156,7 +141,15 @@ export async function POST(request: NextRequest) {
         notifications: {
           email: true,
           push: false,
-          reminders: true
+          reminders: true,
+          bloodPressure: {
+            pushNotifications: true,
+            emailNotifications: true,
+            smsNotifications: false,
+            quietHours: false,
+            quietHoursStart: '10:00 PM',
+            quietHoursEnd: '8:00 AM'
+          }
         }
       };
       userProfile.updatedAt = new Date();
@@ -185,7 +178,15 @@ export async function POST(request: NextRequest) {
           notifications: {
             email: true,
             push: false,
-            reminders: true
+            reminders: true,
+            bloodPressure: {
+              pushNotifications: true,
+              emailNotifications: true,
+              smsNotifications: false,
+              quietHours: false,
+              quietHoursStart: '10:00 PM',
+              quietHoursEnd: '8:00 AM'
+            }
           }
         }
       });

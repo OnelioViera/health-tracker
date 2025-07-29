@@ -68,6 +68,33 @@ const UserProfileSchema = new mongoose.Schema({
         type: Boolean,
         default: true,
       },
+      // Blood pressure specific notification settings
+      bloodPressure: {
+        pushNotifications: {
+          type: Boolean,
+          default: true,
+        },
+        emailNotifications: {
+          type: Boolean,
+          default: true,
+        },
+        smsNotifications: {
+          type: Boolean,
+          default: false,
+        },
+        quietHours: {
+          type: Boolean,
+          default: false,
+        },
+        quietHoursStart: {
+          type: String,
+          default: '10:00 PM',
+        },
+        quietHoursEnd: {
+          type: String,
+          default: '8:00 AM',
+        },
+      },
     },
   },
 }, {

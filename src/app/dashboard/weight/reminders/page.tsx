@@ -20,7 +20,8 @@ import {
   Smartphone,
   Mail,
   MessageSquare,
-  Save
+  Save,
+  Scale
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -52,7 +53,7 @@ interface NotificationSettings {
   quietHoursEnd: string;
 }
 
-export default function BloodPressureRemindersPage() {
+export default function WeightRemindersPage() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -103,7 +104,6 @@ export default function BloodPressureRemindersPage() {
       }
     } catch (error) {
       console.error('Error loading notification settings:', error);
-      toast.error('Failed to load notification settings');
     }
   };
 
@@ -132,7 +132,7 @@ export default function BloodPressureRemindersPage() {
     }
   };
 
-  // Test notification functionality
+  // Test notification
   const testNotification = async () => {
     try {
       const response = await fetch('/api/test-notification', {
@@ -141,15 +141,14 @@ export default function BloodPressureRemindersPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          title: 'Test Blood Pressure Reminder',
+          type: 'weight_reminder',
+          title: 'Test Weight Reminder',
           message: 'This is a test notification to verify your settings are working correctly.',
-          type: 'blood_pressure_reminder'
         }),
       });
 
       if (response.ok) {
-        const result = await response.json();
-        toast.success(`Test notification sent! Sent to: ${result.sentTo.join(', ')}`);
+        toast.success('Test notification sent successfully');
       } else {
         throw new Error('Failed to send test notification');
       }
@@ -159,77 +158,41 @@ export default function BloodPressureRemindersPage() {
     }
   };
 
+  // Load reminders from localStorage
   useEffect(() => {
-    // Load reminders from localStorage or use mock data as fallback
     const loadReminders = () => {
       try {
-        const savedReminders = localStorage.getItem('bloodPressureReminders');
-        if (savedReminders) {
-          return JSON.parse(savedReminders);
+        const stored = localStorage.getItem('weight-reminders');
+        if (stored) {
+          setReminders(JSON.parse(stored));
         }
       } catch (error) {
-        console.error('Error loading reminders from localStorage:', error);
+        console.error('Error loading reminders:', error);
+      } finally {
+        setLoading(false);
       }
-      
-      // Fallback to mock reminders if no saved data
-      return [
-        {
-          _id: '1',
-          title: 'Morning Blood Pressure Check',
-          frequency: 'daily',
-          time: '08:00 AM',
-          days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
-          isActive: true,
-          message: 'Time to check your blood pressure!',
-          notificationType: 'push',
-          createdAt: new Date().toISOString()
-        },
-        {
-          _id: '2',
-          title: 'Evening Blood Pressure Check',
-          frequency: 'daily',
-          time: '08:00 PM',
-          days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
-          isActive: true,
-          message: 'Evening blood pressure check time!',
-          notificationType: 'push',
-          createdAt: new Date().toISOString()
-        },
-        {
-          _id: '3',
-          title: 'Weekly Blood Pressure Review',
-          frequency: 'weekly',
-          time: '10:00 AM',
-          days: ['sunday'],
-          isActive: false,
-          message: 'Weekly blood pressure review and analysis',
-          notificationType: 'email',
-          createdAt: new Date().toISOString()
-        }
-      ];
     };
-    
-    const reminders = loadReminders();
-    setReminders(reminders);
+
+    loadReminders();
     loadNotificationSettings();
-    setLoading(false);
   }, []);
 
-  // Helper function to save reminders to localStorage
+  // Save reminders to localStorage
   const saveRemindersToStorage = (updatedReminders: Reminder[]) => {
     try {
-      localStorage.setItem('bloodPressureReminders', JSON.stringify(updatedReminders));
+      localStorage.setItem('weight-reminders', JSON.stringify(updatedReminders));
     } catch (error) {
-      console.error('Error saving reminders to localStorage:', error);
+      console.error('Error saving reminders:', error);
     }
   };
 
+  // Create new reminder
   const handleCreateReminder = () => {
     setEditingReminder({
       title: '',
       frequency: 'daily',
       time: '08:00 AM',
-      days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
+      days: [],
       isActive: true,
       message: '',
       notificationType: 'push'
@@ -238,12 +201,14 @@ export default function BloodPressureRemindersPage() {
     setIsModalOpen(true);
   };
 
+  // Edit reminder
   const handleEditReminder = (reminder: Reminder) => {
     setEditingReminder(reminder);
     setIsEditMode(true);
     setIsModalOpen(true);
   };
 
+  // Delete reminder
   const handleDeleteReminder = (reminderId: string) => {
     const updatedReminders = reminders.filter(r => r._id !== reminderId);
     setReminders(updatedReminders);
@@ -251,6 +216,7 @@ export default function BloodPressureRemindersPage() {
     toast.success('Reminder deleted successfully');
   };
 
+  // Toggle reminder active status
   const handleToggleReminder = (reminderId: string) => {
     const updatedReminders = reminders.map(r => 
       r._id === reminderId ? { ...r, isActive: !r.isActive } : r
@@ -260,79 +226,79 @@ export default function BloodPressureRemindersPage() {
     toast.success('Reminder status updated');
   };
 
+  // Save reminder
   const handleSaveReminder = () => {
     if (!editingReminder.title || !editingReminder.message) {
       toast.error('Please fill in all required fields');
       return;
     }
 
-    let updatedReminders: Reminder[];
+    const newReminder: Reminder = {
+      _id: isEditMode ? editingReminder._id! : Date.now().toString(),
+      title: editingReminder.title!,
+      frequency: editingReminder.frequency || 'daily',
+      time: editingReminder.time || '08:00 AM',
+      days: editingReminder.days || [],
+      isActive: editingReminder.isActive !== false,
+      message: editingReminder.message!,
+      notificationType: editingReminder.notificationType || 'push',
+      createdAt: isEditMode ? editingReminder.createdAt! : new Date().toISOString()
+    };
 
     if (isEditMode) {
-      updatedReminders = reminders.map(r => 
-        r._id === editingReminder._id ? { ...r, ...editingReminder } as Reminder : r
+      const updatedReminders = reminders.map(r => 
+        r._id === newReminder._id ? newReminder : r
       );
+      setReminders(updatedReminders);
+      saveRemindersToStorage(updatedReminders);
       toast.success('Reminder updated successfully');
     } else {
-      const newReminder: Reminder = {
-        ...editingReminder as Reminder,
-        _id: Date.now().toString(),
-        createdAt: new Date().toISOString()
-      };
-      updatedReminders = [...reminders, newReminder];
+      const updatedReminders = [newReminder, ...reminders];
+      setReminders(updatedReminders);
+      saveRemindersToStorage(updatedReminders);
       toast.success('Reminder created successfully');
     }
 
-    setReminders(updatedReminders);
-    saveRemindersToStorage(updatedReminders);
     setIsModalOpen(false);
     setEditingReminder({});
   };
 
+  // Helper functions
   const getFrequencyText = (frequency: string, days: string[]) => {
-    if (frequency === 'daily') return 'Daily';
-    if (frequency === 'weekly') return 'Weekly';
-    if (frequency === 'custom') {
-      const dayNames = {
-        monday: 'Mon', tuesday: 'Tue', wednesday: 'Wed', 
-        thursday: 'Thu', friday: 'Fri', saturday: 'Sat', sunday: 'Sun'
-      };
-      return days.map(day => dayNames[day as keyof typeof dayNames]).join(', ');
+    switch (frequency) {
+      case 'daily': return 'Daily';
+      case 'weekly': return 'Weekly';
+      case 'custom': return `Custom (${days.join(', ')})`;
+      default: return frequency;
     }
-    return 'Custom';
   };
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case 'push': return <Smartphone className="h-4 w-4" />;
-      case 'email': return <Mail className="h-4 w-4" />;
-      case 'sms': return <MessageSquare className="h-4 w-4" />;
-      default: return <Bell className="h-4 w-4" />;
+      case 'push': return <Smartphone className="h-6 w-6 text-blue-500" />;
+      case 'email': return <Mail className="h-6 w-6 text-green-500" />;
+      case 'sms': return <MessageSquare className="h-6 w-6 text-purple-500" />;
+      default: return <Bell className="h-6 w-6 text-gray-500" />;
     }
   };
 
-  // Helper function to create time picker options
   const createTimePickerOptions = (type: 'hour' | 'minute' | 'period') => {
     switch (type) {
       case 'hour':
-        return Array.from({length: 12}, (_, i) => i + 1).map(hour => ({
-          value: hour.toString().padStart(2, '0'),
-          label: hour.toString()
+        return Array.from({ length: 12 }, (_, i) => ({
+          value: (i + 1).toString().padStart(2, '0'),
+          label: (i + 1).toString()
         }));
       case 'minute':
-        return [
-          { value: '00', label: '00' },
-          { value: '15', label: '15' },
-          { value: '30', label: '30' },
-          { value: '45', label: '45' }
-        ];
+        return Array.from({ length: 60 }, (_, i) => ({
+          value: i.toString().padStart(2, '0'),
+          label: i.toString().padStart(2, '0')
+        }));
       case 'period':
         return [
           { value: 'AM', label: 'AM' },
           { value: 'PM', label: 'PM' }
         ];
-      default:
-        return [];
     }
   };
 
@@ -343,9 +309,12 @@ export default function BloodPressureRemindersPage() {
     return (
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Blood Pressure Reminders</h1>
-            <p className="text-gray-600">Configure your blood pressure check reminders</p>
+          <div className="flex items-center space-x-4">
+            <BackButton />
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Weight Reminders</h1>
+              <p className="text-gray-600">Configure your weight check reminders</p>
+            </div>
           </div>
         </div>
         <div className="flex items-center justify-center h-64">
@@ -362,8 +331,8 @@ export default function BloodPressureRemindersPage() {
         <div className="flex items-center space-x-4">
           <BackButton />
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Blood Pressure Reminders</h1>
-            <p className="text-gray-600">Configure your blood pressure check reminders</p>
+            <h1 className="text-3xl font-bold text-gray-900">Weight Reminders</h1>
+            <p className="text-gray-600">Configure your weight check reminders</p>
           </div>
         </div>
         <Button onClick={handleCreateReminder}>
@@ -812,7 +781,7 @@ export default function BloodPressureRemindersPage() {
                 id="title"
                 value={editingReminder.title || ''}
                 onChange={(e) => setEditingReminder({ ...editingReminder, title: e.target.value })}
-                placeholder="e.g., Morning Blood Pressure Check"
+                placeholder="e.g., Morning Weight Check"
               />
             </div>
             
@@ -822,7 +791,7 @@ export default function BloodPressureRemindersPage() {
                 id="message"
                 value={editingReminder.message || ''}
                 onChange={(e) => setEditingReminder({ ...editingReminder, message: e.target.value })}
-                placeholder="e.g., Time to check your blood pressure!"
+                placeholder="e.g., Time to check your weight!"
                 rows={3}
               />
             </div>

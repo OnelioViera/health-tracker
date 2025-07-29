@@ -425,7 +425,7 @@ export default function BloodPressurePage() {
                                 )}
                               </div>
                               <div className="text-xs text-gray-500">
-                                {new Date(reading.date).toLocaleDateString()} at {new Date(reading.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                {new Date(reading.date).toLocaleDateString()} at {new Date(reading.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true})}
                                 {reading.pulse && (
                                   <span className="ml-2">• Pulse: {reading.pulse} bpm</span>
                                 )}
@@ -554,7 +554,7 @@ export default function BloodPressurePage() {
                     <div>
                       <p className="text-lg font-semibold">{reading.systolic}/{reading.diastolic} mmHg</p>
                       <p className="text-sm text-gray-500">
-                        {new Date(reading.date).toLocaleDateString()} at {new Date(reading.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        {new Date(reading.date).toLocaleDateString()} at {new Date(reading.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true})}
                       </p>
                       {reading.pulse && (
                         <p className="text-xs text-gray-500">Pulse: {reading.pulse} bpm</p>
@@ -694,7 +694,7 @@ export default function BloodPressurePage() {
                 <div className="flex items-center space-x-2">
                   <Activity className="h-4 w-4 text-gray-500" />
                   <span className="text-sm">
-                    {new Date(selectedReading.date).toLocaleDateString()} at {new Date(selectedReading.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    {new Date(selectedReading.date).toLocaleDateString()} at {new Date(selectedReading.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true})}
                   </span>
                 </div>
                 

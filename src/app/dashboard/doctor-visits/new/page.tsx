@@ -25,11 +25,36 @@ export default function NewDoctorVisitPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Helper functions for time format conversion
+  const convert24HourTo12Hour = (time24Hour: string): string => {
+    const [hours, minutes] = time24Hour.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+    return `${displayHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${period}`;
+  };
+
+  const convert12HourTo24Hour = (time12Hour: string): string => {
+    const match = time12Hour.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (!match) return time12Hour; // Return as-is if not in expected format
+    
+    let hour = parseInt(match[1]);
+    const minute = parseInt(match[2]);
+    const period = match[3].toUpperCase();
+    
+    if (period === 'PM' && hour !== 12) {
+      hour += 12;
+    } else if (period === 'AM' && hour === 12) {
+      hour = 0;
+    }
+    
+    return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+  };
+
   const [formData, setFormData] = useState({
     doctorName: "",
     specialty: "",
     visitDate: new Date().toISOString().split('T')[0],
-    visitTime: new Date().toTimeString().slice(0, 5),
+    visitTime: convert24HourTo12Hour(new Date().toTimeString().slice(0, 5)),
     visitType: "checkup",
     symptoms: [""],
     diagnosis: "",
@@ -108,7 +133,7 @@ export default function NewDoctorVisitPage() {
         },
         body: JSON.stringify({
           ...formData,
-          visitDate: new Date(`${formData.visitDate}T${formData.visitTime}`),
+          visitDate: new Date(`${formData.visitDate}T${convert12HourTo24Hour(formData.visitTime)}`),
           followUpDate: formData.followUpDate ? new Date(formData.followUpDate) : undefined,
           cost: formData.cost ? parseFloat(formData.cost) : undefined,
           symptoms: formData.symptoms.filter(s => s.trim() !== ""),
@@ -188,13 +213,63 @@ export default function NewDoctorVisitPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="visitTime">Visit Time</Label>
-                <Input
-                  id="visitTime"
-                  type="time"
-                  value={formData.visitTime}
-                  onChange={(e) => handleInputChange('visitTime', e.target.value)}
-                  required
-                />
+                <div className="flex space-x-2">
+                  <Select 
+                    value={formData.visitTime ? formData.visitTime.split(':')[0] : '12'}
+                    onValueChange={(hour) => {
+                      const currentTime = formData.visitTime || '12:00 AM';
+                      const [_, minute, period] = currentTime.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i) || ['', '00', 'AM'];
+                      handleInputChange('visitTime', `${hour}:${minute} ${period}`);
+                    }}
+                  >
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({length: 12}, (_, i) => i + 1).map(hour => (
+                        <SelectItem key={hour} value={hour.toString().padStart(2, '0')}>
+                          {hour}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <span className="flex items-center">:</span>
+                  <Select 
+                    value={formData.visitTime ? formData.visitTime.split(':')[1]?.split(' ')[0] : '00'}
+                    onValueChange={(minute) => {
+                      const currentTime = formData.visitTime || '12:00 AM';
+                      const [hour, _, period] = currentTime.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i) || ['12', '00', 'AM'];
+                      handleInputChange('visitTime', `${hour}:${minute} ${period}`);
+                    }}
+                  >
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({length: 60}, (_, i) => i).map(minute => (
+                        <SelectItem key={minute} value={minute.toString().padStart(2, '0')}>
+                          {minute.toString().padStart(2, '0')}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select 
+                    value={formData.visitTime ? formData.visitTime.split(' ')[1] : 'AM'}
+                    onValueChange={(period) => {
+                      const currentTime = formData.visitTime || '12:00 AM';
+                      const [hour, minute] = currentTime.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i) || ['12', '00'];
+                      handleInputChange('visitTime', `${hour}:${minute} ${period}`);
+                    }}
+                  >
+                    <SelectTrigger className="w-16">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="AM">AM</SelectItem>
+                      <SelectItem value="PM">PM</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="visitType">Visit Type</Label>
