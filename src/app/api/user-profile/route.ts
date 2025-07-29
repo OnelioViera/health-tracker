@@ -11,6 +11,11 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const user = await currentUser();
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
     const db = await connectDB();
     
     // If using mock connection, return default profile
@@ -21,7 +26,7 @@ export async function GET() {
           userId,
           firstName: user.firstName || 'User',
           lastName: user.lastName || '',
-          email: user.emailAddresses[0]?.emailAddress || '',
+          email: user.primaryEmailAddress?.emailAddress || '',
           preferences: {
             healthDataSharing: true,
             notifications: {
