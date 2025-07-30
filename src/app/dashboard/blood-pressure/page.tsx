@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Activity, Plus, TrendingUp, AlertTriangle, Edit, Trash2, Eye } from "lucide-react";
+import { Activity, Plus, TrendingUp, AlertTriangle, Edit, Trash2, Eye, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -262,12 +262,25 @@ export default function BloodPressurePage() {
             <p className="text-gray-600">Track your blood pressure readings and monitor trends</p>
           </div>
         </div>
-        <Link href="/dashboard/blood-pressure/new">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Reading
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              fetchReadings();
+              toast.success('Blood pressure data refreshed');
+            }}
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
           </Button>
-        </Link>
+          <Link href="/dashboard/blood-pressure/new">
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Reading
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Stats Overview */}

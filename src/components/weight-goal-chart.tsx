@@ -30,7 +30,7 @@ export default function WeightGoalChart({
   const remainingWeight = currentWeight - targetWeight;
 
   return (
-    <Card className="w-full">
+    <Card className="w-full relative">
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <Scale className="h-5 w-5 text-blue-600" />

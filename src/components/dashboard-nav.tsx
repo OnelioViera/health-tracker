@@ -15,6 +15,7 @@ import {
   FileText,
   Scale,
   Target,
+  Pill,
 } from "lucide-react";
 
 const navigation = [
@@ -42,6 +43,11 @@ const navigation = [
     name: "Doctor Visits",
     href: "/dashboard/doctor-visits",
     icon: Stethoscope,
+  },
+  {
+    name: "Medications",
+    href: "/dashboard/medications",
+    icon: Pill,
   },
   {
     name: "Goals",
@@ -82,7 +88,7 @@ export function DashboardNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex-1 px-4 py-6 space-y-2">
+    <nav className="flex-1 px-4 py-6 space-y-2 relative z-10">
       <div className="space-y-2">
         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
           Health Tracking
@@ -95,11 +101,12 @@ export function DashboardNav() {
               key={item.name}
               href={item.href}
               className={cn(
-                "flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                "flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors relative z-10",
                 isActive
                   ? "bg-blue-50 text-blue-700 border border-blue-200"
                   : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
               )}
+              style={{ pointerEvents: 'auto' }}
             >
               <item.icon className="h-5 w-5" />
               <span>{item.name}</span>
@@ -119,11 +126,12 @@ export function DashboardNav() {
               key={item.name}
               href={item.href}
               className={cn(
-                "flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                "flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors relative z-10",
                 isActive
                   ? "bg-blue-50 text-blue-700 border border-blue-200"
                   : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
               )}
+              style={{ pointerEvents: 'auto' }}
             >
               <item.icon className="h-5 w-5" />
               <span>{item.name}</span>

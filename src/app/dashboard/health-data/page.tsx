@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +17,8 @@ import {
   Calendar,
   FileText,
   Heart,
-  Target
+  Target,
+  RefreshCw
 } from 'lucide-react';
 
 interface HealthDataSummary {
@@ -188,9 +190,22 @@ export default function HealthDataPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Health Data Overview</h1>
-        <p className="text-gray-600">Monitor and manage all your health metrics in one place</p>
+      <div className="mb-8 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Health Data Overview</h1>
+          <p className="text-gray-600">Monitor and manage all your health metrics in one place</p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            fetchHealthDataSummary();
+            toast.success('Health data refreshed');
+          }}
+        >
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Refresh
+        </Button>
       </div>
 
       {/* Quick Stats */}

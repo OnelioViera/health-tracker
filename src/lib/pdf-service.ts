@@ -41,19 +41,26 @@ interface WeightRecord {
   notes?: string;
 }
 
-export interface HealthData {
-  bloodPressure?: BloodPressureRecord[];
-  bloodWork?: BloodWorkRecord[];
-  doctorVisits?: DoctorVisitRecord[];
-  weight?: WeightRecord[];
+interface MedicationRecord {
+  name: string;
+  dosage: string;
+  frequency: string;
+  duration: string;
+  startDate: string;
+  endDate?: string;
+  status: string;
+  category: string;
+  prescribedBy?: string;
+  pharmacy?: string;
+  notes?: string;
+  sideEffects?: string[];
+  interactions?: string[];
 }
 
-export interface PDFReportOptions {
-  patientName: string;
-  reportDate: string;
-  dataTypes: string[];
-  sharedData: HealthData;
-  expiresInDays: number;
+interface PersonalInfo {
+  firstName: string;
+  lastName: string;
+  email: string;
   birthdate?: Date;
   address?: {
     street?: string;
@@ -62,61 +69,132 @@ export interface PDFReportOptions {
     zipCode?: string;
     country?: string;
   };
+  phone?: string;
+}
+
+export interface HealthData {
+  bloodPressure?: BloodPressureRecord[];
+  bloodWork?: BloodWorkRecord[];
+  doctorVisits?: DoctorVisitRecord[];
+  weight?: WeightRecord[];
+  medications?: MedicationRecord[];
+}
+
+export interface PDFReportOptions {
+  patientName: string;
+  reportDate: string;
+  dataTypes: string[];
+  sharedData: HealthData;
+  expiresInDays: number;
+  personalInfo?: PersonalInfo;
+  birthdate?: Date;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country?: string;
+  };
+  includeCharts?: boolean;
+  includeSummary?: boolean;
 }
 
 export async function generateHealthDataPDF(options: PDFReportOptions): Promise<Buffer> {
-  const { patientName, reportDate, dataTypes, sharedData, expiresInDays, birthdate, address } = options;
+  const { patientName, reportDate, dataTypes, sharedData, expiresInDays, personalInfo, birthdate, address, includeCharts = true, includeSummary = true } = options;
   
   // Create PDF document
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 20;
+  const margin = 12; // Reduced margin to fit more content
   const contentWidth = pageWidth - (margin * 2);
   
   let yPosition = margin;
+  let currentPage = 1;
   
   // Helper function to add text with proper wrapping
-  const addText = (text: string, x: number, y: number, maxWidth: number, fontSize: number = 12) => {
+  const addText = (text: string, x: number, y: number, maxWidth: number, fontSize: number = 10) => {
     doc.setFontSize(fontSize);
     const lines = doc.splitTextToSize(text, maxWidth);
     doc.text(lines, x, y);
     return lines.length * (fontSize * 0.4); // Return height used
   };
   
-  // Helper function to add section
+  // Helper function to check if we need a new page
+  const checkNewPage = (requiredHeight: number) => {
+    if (yPosition + requiredHeight > pageHeight - margin) {
+      doc.addPage();
+      currentPage++;
+      yPosition = margin;
+      return true;
+    }
+    return false;
+  };
+  
+  // Helper function to add section with automatic page breaks
   const addSection = (title: string, content: string, y: number) => {
-    doc.setFontSize(16);
+    doc.setFontSize(14); // Smaller title font
     doc.setTextColor(102, 126, 234); // Blue color
     doc.setFont('helvetica', 'bold');
-    const titleHeight = addText(title, margin, y, contentWidth, 16);
+    const titleHeight = addText(title, margin, y, contentWidth, 14);
     
-    doc.setFontSize(12);
+    doc.setFontSize(9); // Smaller content font
     doc.setTextColor(0, 0, 0);
     doc.setFont('helvetica', 'normal');
-    const contentHeight = addText(content, margin, y + titleHeight + 5, contentWidth, 12);
+    const contentHeight = addText(content, margin, y + titleHeight + 3, contentWidth, 9);
     
-    return titleHeight + contentHeight + 10;
+    return titleHeight + contentHeight + 8; // Reduced spacing
   };
   
   // Header
   doc.setFillColor(102, 126, 234);
-  doc.rect(0, 0, pageWidth, 40, 'F');
+  doc.rect(0, 0, pageWidth, 35, 'F'); // Smaller header
   
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(24);
+  doc.setFontSize(20); // Smaller header font
   doc.setFont('helvetica', 'bold');
-  doc.text('MyHealthFirst', margin, 25);
+  doc.text('MyHealthFirst', margin, 20);
   
-  doc.setFontSize(14);
+  doc.setFontSize(12); // Smaller subtitle font
   doc.setFont('helvetica', 'normal');
-  doc.text('Health Data Report', margin, 35);
+  doc.text('Health Data Report', margin, 30);
   
-  yPosition = 50;
+  yPosition = 45; // Reduced starting position
+  
+  // Personal Information Section
+  if (personalInfo) {
+    let personalInfoText = `Name: ${personalInfo.firstName} ${personalInfo.lastName}\nEmail: ${personalInfo.email}`;
+    
+    if (personalInfo.phone) {
+      personalInfoText += `\nPhone: ${personalInfo.phone}`;
+    }
+    
+    if (personalInfo.birthdate) {
+      const birthdateStr = new Date(personalInfo.birthdate).toLocaleDateString();
+      personalInfoText += `\nDate of Birth: ${birthdateStr}`;
+    }
+    
+    if (personalInfo.address && (personalInfo.address.street || personalInfo.address.city || personalInfo.address.state)) {
+      const addressParts = [];
+      if (personalInfo.address.street) addressParts.push(personalInfo.address.street);
+      if (personalInfo.address.city) addressParts.push(personalInfo.address.city);
+      if (personalInfo.address.state) addressParts.push(personalInfo.address.state);
+      if (personalInfo.address.zipCode) addressParts.push(personalInfo.address.zipCode);
+      if (personalInfo.address.country) addressParts.push(personalInfo.address.country);
+      
+      if (addressParts.length > 0) {
+        personalInfoText += `\nAddress: ${addressParts.join(', ')}`;
+      }
+    }
+    
+    const sectionHeight = addSection('Personal Information', personalInfoText, yPosition);
+    checkNewPage(sectionHeight);
+    yPosition += sectionHeight;
+  }
   
   // Report Information
   doc.setTextColor(0, 0, 0);
-  let reportInfo = `Patient: ${patientName}\nReport Date: ${reportDate}\nAccess Expires: ${expiresInDays} days from now`;
+  let reportInfo = `Report Date: ${reportDate}\nAccess Expires: ${expiresInDays} days from now`;
   
   if (birthdate) {
     const birthdateStr = new Date(birthdate).toLocaleDateString();
@@ -136,38 +214,102 @@ export async function generateHealthDataPDF(options: PDFReportOptions): Promise<
     }
   }
   
-  yPosition += addSection('Report Information', reportInfo, yPosition);
+  const reportSectionHeight = addSection('Report Information', reportInfo, yPosition);
+  checkNewPage(reportSectionHeight);
+  yPosition += reportSectionHeight;
   
-  // Data Summary
-  const dataTypeLabels = {
-    bloodPressure: 'Blood Pressure Records',
-    bloodWork: 'Blood Work Results',
-    doctorVisits: 'Doctor Visits',
-    weight: 'Weight & BMI Records',
-    all: 'All Health Data'
-  };
-  
-  let summaryText = 'Shared Data Types:\n';
-  dataTypes.forEach(type => {
-    const label = dataTypeLabels[type as keyof typeof dataTypeLabels] || type;
-    let count = 0;
+  // Data Summary (only if includeSummary is true)
+  if (includeSummary) {
+    const dataTypeLabels = {
+      bloodPressure: 'Blood Pressure Records',
+      bloodWork: 'Blood Work Results',
+      doctorVisits: 'Doctor Visits',
+      weight: 'Weight & BMI Records',
+      medications: 'Medications',
+      all: 'All Health Data'
+    };
     
-    if (type === 'all') {
-      // Count all individual data types when "all" is selected
-      count += Array.isArray(sharedData.bloodPressure) ? sharedData.bloodPressure.length : 0;
-      count += Array.isArray(sharedData.bloodWork) ? sharedData.bloodWork.length : 0;
-      count += Array.isArray(sharedData.doctorVisits) ? sharedData.doctorVisits.length : 0;
-      count += Array.isArray(sharedData.weight) ? sharedData.weight.length : 0;
-    } else {
-      // Count specific data type
-      const records = sharedData[type as keyof HealthData];
-      count = Array.isArray(records) ? records.length : 0;
+    let summaryText = 'Data Types Included:\n';
+    dataTypes.forEach(type => {
+      const label = dataTypeLabels[type as keyof typeof dataTypeLabels] || type;
+      let count = 0;
+      
+      if (type === 'all') {
+        // Count all individual data types when "all" is selected
+        count += Array.isArray(sharedData.bloodPressure) ? sharedData.bloodPressure.length : 0;
+        count += Array.isArray(sharedData.bloodWork) ? sharedData.bloodWork.length : 0;
+        count += Array.isArray(sharedData.doctorVisits) ? sharedData.doctorVisits.length : 0;
+        count += Array.isArray(sharedData.weight) ? sharedData.weight.length : 0;
+        count += Array.isArray(sharedData.medications) ? sharedData.medications.length : 0;
+      } else {
+        // Count specific data type
+        const records = sharedData[type as keyof HealthData];
+        count = Array.isArray(records) ? records.length : 0;
+      }
+      
+      summaryText += `• ${label}: ${count} records\n`;
+    });
+    
+    const summarySectionHeight = addSection('Data Summary', summaryText, yPosition);
+    checkNewPage(summarySectionHeight);
+    yPosition += summarySectionHeight;
+  }
+  
+  // Charts Section (only if includeCharts is true)
+  if (includeCharts) {
+    let chartsText = 'Data Visualization Summary:\n\n';
+    
+    // Blood Pressure Chart Summary
+    if (sharedData.bloodPressure && sharedData.bloodPressure.length > 0) {
+      const avgSystolic = sharedData.bloodPressure.reduce((sum, record) => sum + record.systolic, 0) / sharedData.bloodPressure.length;
+      const avgDiastolic = sharedData.bloodPressure.reduce((sum, record) => sum + record.diastolic, 0) / sharedData.bloodPressure.length;
+      chartsText += `Blood Pressure Trends:\n• Average: ${avgSystolic.toFixed(0)}/${avgDiastolic.toFixed(0)} mmHg\n• Total Readings: ${sharedData.bloodPressure.length}\n\n`;
     }
     
-    summaryText += `• ${label}: ${count} records\n`;
-  });
+    // Weight Chart Summary
+    if (sharedData.weight && sharedData.weight.length > 0) {
+      const avgWeight = sharedData.weight.reduce((sum, record) => sum + record.weight, 0) / sharedData.weight.length;
+      const unit = sharedData.weight[0]?.unit || 'lbs';
+      chartsText += `Weight Trends:\n• Average Weight: ${avgWeight.toFixed(1)} ${unit}\n• Total Measurements: ${sharedData.weight.length}\n\n`;
+    }
+    
+    // Medications Summary
+    if (sharedData.medications && sharedData.medications.length > 0) {
+      const activeMeds = sharedData.medications.filter(med => med.status === 'active').length;
+      chartsText += `Medication Overview:\n• Total Medications: ${sharedData.medications.length}\n• Active Medications: ${activeMeds}\n\n`;
+    }
+    
+    const chartsSectionHeight = addSection('Charts & Trends', chartsText, yPosition);
+    checkNewPage(chartsSectionHeight);
+    yPosition += chartsSectionHeight;
+  }
   
-  yPosition += addSection('Data Summary', summaryText, yPosition);
+  // Medications Section
+  if (sharedData.medications && sharedData.medications.length > 0) {
+    let medText = '';
+    
+    sharedData.medications.forEach((record: MedicationRecord, index: number) => {
+      const medicationNumber = index + 1;
+      const startDate = new Date(record.startDate).toLocaleDateString();
+      const prescribedBy = record.prescribedBy ? ` (Prescribed by: ${record.prescribedBy})` : '';
+      const pharmacy = record.pharmacy ? ` (Pharmacy: ${record.pharmacy})` : '';
+      const notes = record.notes ? `\n  Notes: ${record.notes}` : '';
+      const sideEffects = record.sideEffects && record.sideEffects.length > 0 ? 
+        `\n  Side Effects: ${record.sideEffects.join(', ')}` : '';
+      const interactions = record.interactions && record.interactions.length > 0 ? 
+        `\n  Interactions: ${record.interactions.join(', ')}` : '';
+      
+      // Format each medication with clear separation and better line breaks
+      medText += `${medicationNumber}. ${record.name} ${record.dosage} - ${record.frequency}${prescribedBy}${pharmacy}${notes}${sideEffects}${interactions}\n  Started: ${startDate}, Status: ${record.status}\n\n`;
+    });
+    
+    // Remove the last double newline to avoid extra spacing
+    medText = medText.trim();
+    
+    const medSectionHeight = addSection('Current Medications', medText, yPosition);
+    checkNewPage(medSectionHeight);
+    yPosition += medSectionHeight;
+  }
   
   // Detailed Data Sections
   if (sharedData.bloodPressure && sharedData.bloodPressure.length > 0) {
@@ -179,7 +321,9 @@ export async function generateHealthDataPDF(options: PDFReportOptions): Promise<
       return `${date}: ${bp}${pulse}${notes}`;
     }).join('\n');
     
-    yPosition += addSection('Blood Pressure Records', bpText, yPosition);
+    const bpSectionHeight = addSection('Blood Pressure Records', bpText, yPosition);
+    checkNewPage(bpSectionHeight);
+    yPosition += bpSectionHeight;
   }
   
   if (sharedData.bloodWork && sharedData.bloodWork.length > 0) {
@@ -192,7 +336,9 @@ export async function generateHealthDataPDF(options: PDFReportOptions): Promise<
       return `${date}: ${test} at ${lab}${results}${notes}`;
     }).join('\n');
     
-    yPosition += addSection('Blood Work Results', bwText, yPosition);
+    const bwSectionHeight = addSection('Blood Work Results', bwText, yPosition);
+    checkNewPage(bwSectionHeight);
+    yPosition += bwSectionHeight;
   }
   
   if (sharedData.doctorVisits && sharedData.doctorVisits.length > 0) {
@@ -206,7 +352,9 @@ export async function generateHealthDataPDF(options: PDFReportOptions): Promise<
       return `${date}: ${doctor} (${specialty}) - ${type}${diagnosis}${treatment}`;
     }).join('\n');
     
-    yPosition += addSection('Doctor Visits', dvText, yPosition);
+    const dvSectionHeight = addSection('Doctor Visits', dvText, yPosition);
+    checkNewPage(dvSectionHeight);
+    yPosition += dvSectionHeight;
   }
   
   if (sharedData.weight && sharedData.weight.length > 0) {
@@ -218,16 +366,27 @@ export async function generateHealthDataPDF(options: PDFReportOptions): Promise<
       return `${date}: ${weight}${height}${notes}`;
     }).join('\n');
     
-    yPosition += addSection('Weight & BMI Records', weightText, yPosition);
+    const weightSectionHeight = addSection('Weight & BMI Records', weightText, yPosition);
+    checkNewPage(weightSectionHeight);
+    yPosition += weightSectionHeight;
   }
   
-  // Footer
-  const footerY = pageHeight - 30;
-  doc.setFontSize(10);
+  // Add page numbers to all pages
+  for (let i = 1; i <= currentPage; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(128, 128, 128);
+    doc.text(`Page ${i} of ${currentPage}`, pageWidth - margin - 30, pageHeight - 10);
+  }
+  
+  // Footer on last page
+  doc.setPage(currentPage);
+  const footerY = pageHeight - 25;
+  doc.setFontSize(8); // Smaller footer font
   doc.setTextColor(128, 128, 128);
   doc.text('This report was generated by MyHealthFirst', margin, footerY);
-  doc.text('Please ensure HIPAA compliance and patient confidentiality', margin, footerY + 5);
-  doc.text(`Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`, margin, footerY + 10);
+  doc.text('Please ensure HIPAA compliance and patient confidentiality', margin, footerY + 4);
+  doc.text(`Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`, margin, footerY + 8);
   
   // Convert to buffer
   const pdfBytes = doc.output('arraybuffer');

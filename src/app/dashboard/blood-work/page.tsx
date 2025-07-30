@@ -3,10 +3,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Activity, Plus, TrendingUp, AlertTriangle, TestTube, Calendar, FileText, CheckCircle } from "lucide-react";
+import { Activity, Plus, TrendingUp, AlertTriangle, TestTube, Calendar, FileText, CheckCircle, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import BackButton from "@/components/back-button";
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 
 interface BloodWorkResult {
   parameter: string;
@@ -135,12 +136,25 @@ export default function BloodWorkPage() {
             <p className="text-gray-600">Track your lab results and blood tests</p>
           </div>
         </div>
-        <Link href="/dashboard/blood-work/new">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Result
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              fetchBloodWork();
+              toast.success('Blood work data refreshed');
+            }}
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
           </Button>
-        </Link>
+          <Link href="/dashboard/blood-work/new">
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Result
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Stats Overview */}

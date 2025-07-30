@@ -1,11 +1,12 @@
+"use client";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Activity, Plus, TrendingUp, AlertTriangle, Calendar, Clock, DollarSign, Edit, Trash2 } from "lucide-react";
+import { Activity, Plus, TrendingUp, AlertTriangle, Calendar, Clock, DollarSign, Edit, Trash2, RefreshCw } from "lucide-react";
 import Link from "next/link";
-import { auth } from "@clerk/nextjs/server";
-import connectDB from "@/lib/mongodb";
-import DoctorVisit from "@/lib/models/DoctorVisit";
+import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import BackButton from "@/components/back-button";
 import AppointmentCard from "@/components/appointment-card";
 
@@ -37,57 +38,67 @@ interface DoctorVisitData {
   status: string;
 }
 
-export default async function DoctorVisitsPage() {
-  const { userId } = await auth();
-  
-  if (!userId) {
+export default function DoctorVisitsPage() {
+  const [doctorVisits, setDoctorVisits] = useState<DoctorVisitData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchDoctorVisits = async () => {
+    try {
+      const response = await fetch('/api/doctor-visits');
+      if (response.ok) {
+        const data = await response.json();
+        setDoctorVisits(data.data || []);
+      } else {
+        console.error('Failed to fetch doctor visits');
+      }
+    } catch (error) {
+      console.error('Error fetching doctor visits:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDoctorVisits();
+  }, []);
+
+  const upcomingVisits = doctorVisits.filter(visit => visit.status === 'scheduled');
+  const completedVisits = doctorVisits.filter(visit => visit.status === 'completed');
+  const totalCost = doctorVisits.reduce((sum, visit) => sum + (visit.cost || 0), 0);
+
+  if (isLoading) {
     return (
-      <div className="p-6">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Unauthorized</h1>
-          <p className="text-gray-600">Please sign in to view your doctor visits.</p>
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-500">Loading doctor visits...</div>
         </div>
       </div>
     );
   }
 
-  // Real MongoDB connection
-  try {
-    // Ensure connection is established before any queries
-    await connectDB();
-
-    const doctorVisits = await DoctorVisit.find({ userId }).sort({ visitDate: -1 }).lean() as unknown as DoctorVisitData[];
-    
-    // Properly serialize the data for client components
-    const serializedVisits = doctorVisits.map(visit => ({
-      ...visit,
-      _id: visit._id.toString(),
-      visitDate: new Date(visit.visitDate),
-      followUpDate: visit.followUpDate ? new Date(visit.followUpDate) : undefined,
-      medications: visit.medications.map(med => ({
-        name: med.name || '',
-        dosage: med.dosage || '',
-        frequency: med.frequency || '',
-        duration: med.duration || '',
-        notes: med.notes || ''
-      }))
-    }));
-    
-    const upcomingVisits = serializedVisits.filter(visit => visit.status === 'scheduled');
-    const completedVisits = serializedVisits.filter(visit => visit.status === 'completed');
-    const totalCost = serializedVisits.reduce((sum, visit) => sum + (visit.cost || 0), 0);
-
-    return (
-      <div className="p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <BackButton />
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Doctor Visits</h1>
-              <p className="text-gray-600">Track your medical appointments and visits</p>
-            </div>
+  return (
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <BackButton />
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Doctor Visits</h1>
+            <p className="text-gray-600">Track your medical appointments and visits</p>
           </div>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              fetchDoctorVisits();
+              toast.success('Doctor visits data refreshed');
+            }}
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
           <Link href="/dashboard/doctor-visits/new">
             <Button>
               <Plus className="h-4 w-4 mr-2" />
@@ -95,6 +106,7 @@ export default async function DoctorVisitsPage() {
             </Button>
           </Link>
         </div>
+      </div>
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -249,34 +261,4 @@ export default async function DoctorVisitsPage() {
         </div>
       </div>
     );
-  } catch (error) {
-    console.error('Error fetching doctor visits:', error);
-    
-    // Return error state
-    return (
-      <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <BackButton />
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Doctor Visits</h1>
-              <p className="text-gray-600">Track your medical appointments and visits</p>
-            </div>
-          </div>
-          <Link href="/dashboard/doctor-visits/new">
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Visit
-            </Button>
-          </Link>
-        </div>
-        
-        <div className="text-center py-8">
-          <AlertTriangle className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-          <p className="text-gray-500">Unable to load doctor visits</p>
-          <p className="text-sm text-gray-400">Please check your database connection and try again</p>
-        </div>
-      </div>
-    );
-  }
-} 
+  } 

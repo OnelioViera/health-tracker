@@ -18,7 +18,8 @@ import {
   Trash2,
   X,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  RefreshCw
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -468,14 +469,27 @@ export default function CalendarPage() {
             <p className="text-gray-600">Track your health appointments and events</p>
           </div>
         </div>
-        <Button onClick={() => {
-          setEditingEvent(null);
-          setIsEditMode(false);
-          setIsEventModalOpen(true);
-        }}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Event
-        </Button>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              fetchEvents();
+              toast.success('Calendar data refreshed');
+            }}
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+          <Button onClick={() => {
+            setEditingEvent(null);
+            setIsEditMode(false);
+            setIsEventModalOpen(true);
+          }}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Event
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}

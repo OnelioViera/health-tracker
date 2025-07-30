@@ -124,14 +124,19 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const { userId } = await auth();
+    console.log("Weight API - Auth check:", { userId: userId ? "present" : "missing" });
+    
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      console.log("Weight API - Unauthorized: No userId found");
+      return NextResponse.json({ error: "Unauthorized - Please sign in again" }, { status: 401 });
     }
 
     const db = await connectDB();
+    console.log("Weight API - Database connection:", { readyState: db.connection?.readyState });
     
     // If using mock connection, return mock data
     if (db.connection?.readyState === 1 && !process.env.MONGODB_URI?.startsWith('mongodb')) {
+      console.log("Weight API - Using mock data");
       const mockData = [
         {
           _id: 'mock_1',
@@ -174,12 +179,16 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "10");
     const page = parseInt(searchParams.get("page") || "1");
 
+    console.log("Weight API - Fetching from database:", { userId, limit, page });
+
     const weights = await Weight.find({ userId })
       .sort({ date: -1 })
       .limit(limit)
       .skip((page - 1) * limit);
 
     const total = await Weight.countDocuments({ userId });
+
+    console.log("Weight API - Success:", { recordsFound: weights.length, total });
 
     return NextResponse.json({
       data: weights,
@@ -191,9 +200,9 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error fetching weight records:", error);
+    console.error("Weight API - Error fetching weight records:", error);
     return NextResponse.json(
-      { error: "Failed to fetch weight records" },
+      { error: "Failed to fetch weight records - Please try again" },
       { status: 500 }
     );
   }

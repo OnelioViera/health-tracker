@@ -146,33 +146,33 @@ export default function GoalsPage() {
 
   // Auto-update weight goals with latest weight
   useEffect(() => {
-    if (latestWeight && goals.length > 0) {
-      const updatedGoals = goals.map(goal => {
-        if (goal.category === 'weight' && goal.unit === latestWeight.unit) {
-          const newCurrentValue = latestWeight.weight;
-          const progress = calculateProgressForWeightGoal(goal.targetValue, newCurrentValue, goal.startDate, goal.startWeight);
-          
-          // For weight goals, only mark as completed when current weight reaches or goes below target weight
-          let newStatus = goal.status;
-          if (newCurrentValue <= goal.targetValue) {
-            newStatus = 'completed';
-          } else if (newCurrentValue > goal.targetValue) {
-            newStatus = 'active';
+    if (latestWeight) {
+      setGoals(prevGoals => {
+        return prevGoals.map(goal => {
+          if (goal.category === 'weight' && goal.unit === latestWeight.unit) {
+            const newCurrentValue = latestWeight.weight;
+            const progress = calculateProgressForWeightGoal(goal.targetValue, newCurrentValue, goal.startDate, goal.startWeight);
+            
+            // For weight goals, only mark as completed when current weight reaches or goes below target weight
+            let newStatus = goal.status;
+            if (newCurrentValue <= goal.targetValue) {
+              newStatus = 'completed';
+            } else if (newCurrentValue > goal.targetValue) {
+              newStatus = 'active';
+            }
+            
+            return {
+              ...goal,
+              currentValue: newCurrentValue,
+              progress: progress,
+              status: newStatus
+            };
           }
-          
-          return {
-            ...goal,
-            currentValue: newCurrentValue,
-            progress: progress,
-            status: newStatus
-          };
-        }
-        return goal;
+          return goal;
+        });
       });
-      
-      setGoals(updatedGoals);
     }
-  }, [latestWeight, goals, calculateProgressForWeightGoal]);
+  }, [latestWeight, calculateProgressForWeightGoal]);
 
   const createGoal = async (goalData: GoalData) => {
     try {
@@ -410,7 +410,7 @@ export default function GoalsPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 relative">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">

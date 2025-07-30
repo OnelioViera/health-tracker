@@ -3,10 +3,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Activity, Plus, TrendingUp, AlertTriangle, Scale, Target, Calendar, Heart, TrendingDown, Edit, Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import { Activity, Plus, TrendingUp, AlertTriangle, Scale, Target, Calendar, Heart, TrendingDown, Edit, Trash2, ArrowUp, ArrowDown, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import BackButton from "@/components/back-button";
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 
 interface WeightRecord {
   _id: string;
@@ -36,10 +37,18 @@ export default function WeightPage() {
         const data = await response.json();
         setWeightRecords(data.data || []);
       } else {
-        console.error('Failed to fetch weight records');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Failed to fetch weight records:', response.status, errorData.error);
+        
+        if (response.status === 401) {
+          toast.error('Please sign in again to access your weight records');
+        } else {
+          toast.error('Failed to load weight records. Please try again.');
+        }
       }
     } catch (error) {
       console.error('Error fetching weight records:', error);
+      toast.error('Network error. Please check your connection and try again.');
     } finally {
       setIsLoading(false);
     }
@@ -143,11 +152,14 @@ export default function WeightPage() {
         if (response.ok) {
           // Remove the record from the local state
           setWeightRecords(prev => prev.filter(record => record._id !== recordId));
+          toast.success('Weight record deleted successfully!');
         } else {
           console.error('Failed to delete weight record');
+          toast.error('Failed to delete weight record.');
         }
       } catch (error) {
         console.error('Error deleting weight record:', error);
+        toast.error('Error deleting weight record.');
       }
     }
   };
@@ -191,7 +203,6 @@ export default function WeightPage() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <BackButton />
@@ -200,12 +211,25 @@ export default function WeightPage() {
             <p className="text-gray-600">Monitor your weight and BMI</p>
           </div>
         </div>
-        <Link href="/dashboard/weight/new">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Reading
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              fetchWeightRecords();
+              toast.success('Weight data refreshed');
+            }}
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
           </Button>
-        </Link>
+          <Link href="/dashboard/weight/new">
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Reading
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Stats Overview */}
@@ -229,6 +253,11 @@ export default function WeightPage() {
                       )}
                       <span className="ml-2">Recorded on {formatDate(currentWeight.date)}</span>
                     </p>
+                    {weightRecords.length > 1 && (
+                      <p className="text-xs text-blue-600 mt-1">
+                        Started at: {weightRecords[weightRecords.length - 1]?.weight} {weightRecords[weightRecords.length - 1]?.unit}
+                      </p>
+                    )}
                   </div>
                   {currentWeight.height && (
                     <div className="pt-3 border-t border-gray-100">
@@ -387,78 +416,84 @@ export default function WeightPage() {
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold">Recent Records</h3>
-                  <span className="text-sm text-gray-500">{weightRecords.length} records</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-500">{weightRecords.length} records</span>
+                    <span className="text-xs text-gray-400">(showing last 4 readings)</span>
+                    {weightRecords.length > 0 && (
+                      <span className="text-xs text-blue-600">
+                        Start: {weightRecords[weightRecords.length - 1]?.weight} {weightRecords[weightRecords.length - 1]?.unit}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 
-                <div className="overflow-x-auto">
-                  <div className="flex space-x-4 min-w-max">
-                    {weightRecords.slice(0, 5).map((record, index) => {
-                      const bmi = record.height 
-                        ? calculateBMI(record.weight, record.height, record.unit, record.heightUnit || 'in')
-                        : 0;
-                      
-                      // Calculate trend from previous record
-                      const previousRecord = weightRecords[index + 1];
-                      const weightTrend = previousRecord ? calculateTrend(record.weight, previousRecord.weight) : null;
-                      
-                      return (
-                        <div key={record._id} className="flex-shrink-0 w-80 p-4 bg-gray-50 rounded-lg border">
-                          <div className="flex items-center space-x-4">
-                            <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                              <Scale className="h-6 w-6 text-orange-600" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center space-x-2">
-                                <p className="text-lg font-semibold">{record.weight} {record.unit}</p>
-                                {weightTrend && (
-                                  <div className="flex items-center space-x-1">
-                                    {weightTrend.isPositive ? (
-                                      <ArrowUp className="h-3 w-3 text-red-500" />
-                                    ) : (
-                                      <ArrowDown className="h-3 w-3 text-green-500" />
-                                    )}
-                                    <span className={`text-xs ${weightTrend.isPositive ? 'text-red-500' : 'text-green-500'}`}>
-                                      {Math.abs(weightTrend.diff).toFixed(1)}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                              <p className="text-sm text-gray-500">
-                                {formatDate(record.date)}
-                                {record.height && (
-                                  <span className="ml-2">• Height: {record.height} {record.heightUnit || 'in'}</span>
-                                )}
-                                {bmi > 0 && (
-                                  <span className="ml-2">• BMI: {bmi.toFixed(1)}</span>
-                                )}
-                              </p>
-                              {record.notes && (
-                                <p className="text-xs text-gray-500 truncate mt-1">{record.notes}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+                  {weightRecords.slice(0, 5).map((record, index) => {
+                    const bmi = record.height 
+                      ? calculateBMI(record.weight, record.height, record.unit, record.heightUnit || 'in')
+                      : 0;
+                    
+                    // Calculate trend from previous record
+                    const previousRecord = weightRecords[index + 1];
+                    const weightTrend = previousRecord ? calculateTrend(record.weight, previousRecord.weight) : null;
+                    
+                    return (
+                      <div key={record._id} className="p-4 bg-gray-50 rounded-lg border">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <Scale className="h-6 w-6 text-orange-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center space-x-2">
+                              <p className="text-lg font-semibold truncate">{record.weight} {record.unit}</p>
+                              {weightTrend && (
+                                <div className="flex items-center space-x-1 flex-shrink-0">
+                                  {weightTrend.isPositive ? (
+                                    <ArrowUp className="h-3 w-3 text-red-500" />
+                                  ) : (
+                                    <ArrowDown className="h-3 w-3 text-green-500" />
+                                  )}
+                                  <span className={`text-xs ${weightTrend.isPositive ? 'text-red-500' : 'text-green-500'}`}>
+                                    {Math.abs(weightTrend.diff).toFixed(1)}
+                                  </span>
+                                </div>
                               )}
                             </div>
-                          </div>
-                          <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200">
-                            <Badge variant="secondary">Record #{weightRecords.length - index}</Badge>
-                            <div className="flex items-center space-x-1">
-                              <Link href={`/dashboard/weight/edit/${record._id}`}>
-                                <Button variant="ghost" size="sm">
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                              </Link>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={() => handleDelete(record._id)}
-                                className="text-red-600 hover:text-red-700"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
+                            <p className="text-sm text-gray-500">
+                              {formatDate(record.date)}
+                              {record.height && (
+                                <span className="ml-2">• Height: {record.height} {record.heightUnit || 'in'}</span>
+                              )}
+                              {bmi > 0 && (
+                                <span className="ml-2">• BMI: {bmi.toFixed(1)}</span>
+                              )}
+                            </p>
+                            {record.notes && (
+                              <p className="text-xs text-gray-500 truncate mt-1">{record.notes}</p>
+                            )}
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
+                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200">
+                          <Badge variant="secondary">Record #{weightRecords.length - index}</Badge>
+                          <div className="flex items-center space-x-1">
+                            <Link href={`/dashboard/weight/edit/${record._id}`}>
+                              <Button variant="ghost" size="sm">
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => handleDelete(record._id)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
                 
                 {weightRecords.length === 1 && (

@@ -13,7 +13,8 @@ import {
   Stethoscope,
   Scale,
   Calendar,
-  LogOut
+  LogOut,
+  Pill
 } from "lucide-react";
 import { UserButton, useClerk } from "@clerk/nextjs";
 import { useState } from "react";
@@ -35,7 +36,7 @@ export function MobileNav() {
       {/* Menu Sheet */}
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetTrigger asChild>
-          <button className="fixed top-4 right-4 z-50 md:hidden bg-white rounded-lg shadow-md p-2 border border-gray-200">
+          <button className="fixed top-4 right-4 z-[100] md:hidden bg-white rounded-lg shadow-md p-2 border border-gray-200">
             <Menu className="h-5 w-5" />
           </button>
         </SheetTrigger>

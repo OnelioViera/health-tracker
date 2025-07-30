@@ -17,11 +17,13 @@ import {
   CheckCircle,
   ArrowUp,
   ArrowDown,
-  Minus
+  Minus,
+  RefreshCw
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import BackButton from "@/components/back-button";
 import Link from "next/link";
+import { toast } from "sonner";
 
 interface BloodPressureData {
   _id: string;
@@ -374,12 +376,25 @@ export default function AnalyticsPage() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center space-x-4">
-        <BackButton />
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Health Analytics</h1>
-          <p className="text-gray-600">Comprehensive insights into your health data</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <BackButton />
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Health Analytics</h1>
+            <p className="text-gray-600">Comprehensive insights into your health data</p>
+          </div>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            fetchAllData();
+            toast.success('Analytics data refreshed');
+          }}
+        >
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Refresh
+        </Button>
       </div>
 
       {/* Key Metrics */}

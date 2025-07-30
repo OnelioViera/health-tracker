@@ -23,6 +23,7 @@ import {
   Stethoscope,
   Target,
   TrendingUp as TrendingUpIcon,
+  Pill,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -107,6 +108,22 @@ interface DashboardData {
   doctorVisit: DoctorVisit | null;
   upcomingVisits: DoctorVisit[];
   recentActivity: RecentActivity[];
+}
+
+interface HealthScoreBreakdown {
+  total: number;
+  bloodPressure: number;
+  weight: number;
+  activity: number;
+  goals: number;
+  preventiveCare: number;
+  details: {
+    bloodPressure: { score: number; reason: string };
+    weight: { score: number; reason: string };
+    activity: { score: number; reason: string };
+    goals: { score: number; reason: string };
+    preventiveCare: { score: number; reason: string };
+  };
 }
 
 export default function DashboardPage() {
@@ -325,6 +342,215 @@ export default function DashboardPage() {
     
     return calculateTrend(currentBMI, previousBMI);
   };
+
+  const calculateHealthScore = (): HealthScoreBreakdown => {
+    let totalScore = 0;
+    const details = {
+      bloodPressure: { score: 0, reason: '' },
+      weight: { score: 0, reason: '' },
+      activity: { score: 0, reason: '' },
+      goals: { score: 0, reason: '' },
+      preventiveCare: { score: 0, reason: '' }
+    };
+
+    // Blood Pressure Score (30% weight - max 30 points)
+    if (dashboardData.bloodPressure) {
+      const bp = dashboardData.bloodPressure;
+      switch (bp.category) {
+        case 'normal':
+          details.bloodPressure = { score: 30, reason: 'Normal blood pressure' };
+          break;
+        case 'elevated':
+          details.bloodPressure = { score: 20, reason: 'Elevated blood pressure' };
+          break;
+        case 'high':
+          details.bloodPressure = { score: 10, reason: 'High blood pressure' };
+          break;
+        case 'crisis':
+          details.bloodPressure = { score: 0, reason: 'Blood pressure crisis' };
+          break;
+        default:
+          details.bloodPressure = { score: 15, reason: 'Blood pressure data available' };
+      }
+    } else {
+      details.bloodPressure = { score: 5, reason: 'No blood pressure data' };
+    }
+
+    // Weight/BMI Score (25% weight - max 25 points)
+    console.log('Weight data:', dashboardData.weight);
+    if (dashboardData.weight && dashboardData.weight.height) {
+      const bmi = calculateBMI(
+        dashboardData.weight.weight,
+        dashboardData.weight.height,
+        dashboardData.weight.unit,
+        dashboardData.weight.heightUnit || 'in'
+      );
+      console.log('BMI calculated:', bmi);
+      
+      if (bmi >= 18.5 && bmi < 25) {
+        details.weight = { score: 25, reason: 'Healthy BMI' };
+      } else if (bmi >= 17 && bmi < 18.5 || bmi >= 25 && bmi < 30) {
+        details.weight = { score: 15, reason: 'BMI outside optimal range' };
+      } else if (bmi >= 16 && bmi < 17 || bmi >= 30) {
+        details.weight = { score: 5, reason: 'BMI needs attention' };
+      } else {
+        details.weight = { score: 0, reason: 'BMI requires medical attention' };
+      }
+    } else if (dashboardData.weight) {
+      console.log('Weight data available but no height');
+      details.weight = { score: 10, reason: 'Weight tracked (no height for BMI)' };
+    } else {
+      console.log('No weight data available');
+      details.weight = { score: 5, reason: 'No weight data' };
+    }
+
+    // Activity/Tracking Score (20% weight - max 20 points)
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    
+    const recentBPReadings = dashboardData.bloodPressureHistory.filter(r => 
+      new Date(r.date) >= sevenDaysAgo
+    ).length;
+    const recentWeightRecords = dashboardData.weightHistory.filter(r => 
+      new Date(r.date) >= sevenDaysAgo
+    ).length;
+    
+    const totalRecentActivity = recentBPReadings + recentWeightRecords;
+    
+    if (totalRecentActivity >= 3) {
+      details.activity = { score: 20, reason: 'Excellent tracking consistency' };
+    } else if (totalRecentActivity >= 1) {
+      details.activity = { score: 15, reason: 'Good tracking consistency' };
+    } else if (dashboardData.bloodPressureHistory.length > 0 || dashboardData.weightHistory.length > 0) {
+      details.activity = { score: 10, reason: 'Some tracking history' };
+    } else {
+      details.activity = { score: 5, reason: 'No recent activity' };
+    }
+
+    // Goals Progress Score (15% weight - max 15 points)
+    // This would need to be implemented when goals are fetched
+    // For now, we'll give a baseline score
+    details.goals = { score: 10, reason: 'Goals tracking available' };
+
+    // Preventive Care Score (10% weight - max 10 points)
+    const upcomingVisits = dashboardData.upcomingVisits.length;
+    const recentVisits = dashboardData.upcomingVisits.filter(v => 
+      new Date(v.visitDate) >= thirtyDaysAgo
+    ).length;
+    
+    if (upcomingVisits > 0 || recentVisits > 0) {
+      details.preventiveCare = { score: 10, reason: 'Preventive care scheduled/recent' };
+    } else {
+      details.preventiveCare = { score: 5, reason: 'No upcoming appointments' };
+    }
+
+    // Calculate total score
+    totalScore = details.bloodPressure.score + details.weight.score + 
+                 details.activity.score + details.goals.score + details.preventiveCare.score;
+
+    console.log('Health score breakdown:', details);
+    console.log('Total score:', totalScore);
+
+    return {
+      total: totalScore,
+      bloodPressure: details.bloodPressure.score,
+      weight: details.weight.score,
+      activity: details.activity.score,
+      goals: details.goals.score,
+      preventiveCare: details.preventiveCare.score,
+      details
+    };
+  };
+
+  const getHealthScoreColor = (score: number) => {
+    if (score >= 80) return 'text-green-600';
+    if (score >= 60) return 'text-yellow-600';
+    if (score >= 40) return 'text-orange-600';
+    return 'text-red-600';
+  };
+
+  const getHealthScoreMessage = (score: number) => {
+    if (score >= 80) return "Excellent health tracking!";
+    if (score >= 60) return "Good health tracking";
+    if (score >= 40) return "Fair health tracking";
+    return "Needs improvement";
+  };
+
+  const calculateStreak = () => {
+    const now = new Date();
+    const allActivities = [
+      ...dashboardData.bloodPressureHistory.map(bp => ({ date: new Date(bp.date), type: 'blood-pressure' })),
+      ...dashboardData.weightHistory.map(w => ({ date: new Date(w.date), type: 'weight' })),
+      ...dashboardData.upcomingVisits.filter(v => new Date(v.visitDate) <= now).map(v => ({ date: new Date(v.visitDate), type: 'doctor-visit' }))
+    ];
+
+    console.log('Streak calculation - All activities:', allActivities.length);
+    console.log('Blood pressure history:', dashboardData.bloodPressureHistory.length);
+    console.log('Weight history:', dashboardData.weightHistory.length);
+    console.log('Upcoming visits:', dashboardData.upcomingVisits.length);
+
+    // Sort all activities by date (newest first)
+    allActivities.sort((a, b) => b.date.getTime() - a.date.getTime());
+
+    if (allActivities.length === 0) {
+      console.log('No activities found for streak calculation');
+      return { days: 0, message: "No tracking data" };
+    }
+
+    // Get unique dates where user had activity
+    const uniqueDates = [...new Set(allActivities.map(activity => 
+      activity.date.toDateString()
+    ))].sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+
+    console.log('Unique activity dates:', uniqueDates);
+
+    // Check if the most recent activity was today or yesterday
+    const mostRecentDate = new Date(uniqueDates[0]);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    console.log('Most recent activity date:', mostRecentDate.toDateString());
+    console.log('Today:', today.toDateString());
+    console.log('Yesterday:', yesterday.toDateString());
+
+    // If the most recent activity is older than yesterday, streak is 0
+    if (mostRecentDate < yesterday) {
+      console.log('Most recent activity is too old, streak is 0');
+      return { days: 0, message: "Start tracking today" };
+    }
+
+    let streak = 0;
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+
+    // Check for consecutive days starting from today
+    for (let i = 0; i < 365; i++) { // Check up to 1 year
+      const dateString = currentDate.toDateString();
+      const hasActivity = uniqueDates.includes(dateString);
+      
+      if (hasActivity) {
+        streak++;
+        currentDate.setDate(currentDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+
+    console.log('Calculated streak:', streak);
+
+    if (streak === 0) {
+      return { days: 0, message: "Start tracking today" };
+    } else if (streak === 1) {
+      return { days: 1, message: "1 day streak" };
+    } else {
+      return { days: streak, message: `${streak} day streak` };
+    }
+  };
+
+  const healthScore = calculateHealthScore();
+  const streak = calculateStreak();
 
   if (isLoading) {
     return (
@@ -623,10 +849,26 @@ export default function DashboardPage() {
             <Heart className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">85</div>
+            <div className={`text-2xl font-bold ${getHealthScoreColor(healthScore.total)}`}>
+              {healthScore.total}
+            </div>
             <p className="text-xs text-muted-foreground">
-              Based on recent readings
+              {getHealthScoreMessage(healthScore.total)}
             </p>
+            <div className="mt-2 space-y-1">
+              <div className="flex justify-between text-xs">
+                <span>BP: {healthScore.bloodPressure}/30</span>
+                <span>Weight: {healthScore.weight}/25</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span>Activity: {healthScore.activity}/20</span>
+                <span>Goals: {healthScore.goals}/15</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span>Care: {healthScore.preventiveCare}/10</span>
+                <span className="font-medium">Total: {healthScore.total}/100</span>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -636,9 +878,11 @@ export default function DashboardPage() {
             <CheckCircle className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">7 days</div>
+            <div className="text-2xl font-bold">
+              {streak.days === 0 ? "0 days" : `${streak.days} days`}
+            </div>
             <p className="text-xs text-muted-foreground">
-              Consistent tracking
+              {streak.message}
             </p>
           </CardContent>
         </Card>
@@ -721,6 +965,26 @@ export default function DashboardPage() {
               <Button className="w-full">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Visit
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Pill className="h-5 w-5 text-purple-500" />
+              <span>Medications</span>
+            </CardTitle>
+            <CardDescription>
+              Manage your medications and prescriptions
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/dashboard/medications">
+              <Button className="w-full">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Medication
               </Button>
             </Link>
           </CardContent>

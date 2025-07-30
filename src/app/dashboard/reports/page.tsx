@@ -2,12 +2,8 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { 
   FileText, 
-  Download, 
-  Calendar, 
   TrendingUp, 
   Activity, 
   Scale, 
@@ -15,15 +11,16 @@ import {
   FileSpreadsheet,
   File,
   FileJson,
-  CheckCircle,
   Clock,
-  AlertCircle
+  Pill,
+  RefreshCw
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import BackButton from "@/components/back-button";
+import { generateHealthDataPDF } from '@/lib/pdf-service';
 
 interface BloodPressureData {
   _id: string;
@@ -90,14 +87,45 @@ interface ReportData {
   bloodWork: BloodWorkData[];
   doctorVisits: DoctorVisitData[];
   goals: GoalData[];
+  medications: MedicationData[];
+}
+
+interface MedicationData {
+  _id: string;
+  name: string;
+  dosage: string;
+  frequency: string;
+  duration: string;
+  startDate: string;
+  endDate?: string;
+  status: string;
+  category: string;
+  prescribedBy?: string;
+  pharmacy?: string;
+  notes?: string;
+  sideEffects?: string[];
+  interactions?: string[];
+}
+
+interface PersonalInfo {
+  firstName: string;
+  lastName: string;
+  email: string;
+  birthdate?: string;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country?: string;
+  };
+  phone?: string;
 }
 
 interface ReportConfig {
   dataTypes: string[];
   dateRange: string;
   format: 'pdf' | 'csv' | 'json';
-  includeCharts: boolean;
-  includeSummary: boolean;
 }
 
 interface ReportContent {
@@ -116,16 +144,16 @@ export default function ReportsPage() {
     weight: [],
     bloodWork: [],
     doctorVisits: [],
-    goals: []
+    goals: [],
+    medications: []
   });
+  const [personalInfo, setPersonalInfo] = useState<PersonalInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [reportConfig, setReportConfig] = useState<ReportConfig>({
-    dataTypes: ['bloodPressure', 'weight', 'bloodWork', 'doctorVisits', 'goals'],
+    dataTypes: ['bloodPressure', 'weight', 'bloodWork', 'doctorVisits', 'goals', 'medications'],
     dateRange: '30d',
-    format: 'pdf',
-    includeCharts: true,
-    includeSummary: true
+    format: 'pdf'
   });
 
   useEffect(() => {
@@ -136,12 +164,14 @@ export default function ReportsPage() {
     try {
       setIsLoading(true);
       
-      const [bpResponse, weightResponse, bloodWorkResponse, doctorVisitsResponse, goalsResponse] = await Promise.all([
+      const [bpResponse, weightResponse, bloodWorkResponse, doctorVisitsResponse, goalsResponse, medicationsResponse, userProfileResponse] = await Promise.all([
         fetch('/api/blood-pressure'),
         fetch('/api/weight'),
         fetch('/api/blood-work'),
         fetch('/api/doctor-visits'),
-        fetch('/api/goals')
+        fetch('/api/goals'),
+        fetch('/api/medications'),
+        fetch('/api/user-profile')
       ]);
 
       const bpData = bpResponse.ok ? await bpResponse.json() : { data: [] };
@@ -149,14 +179,29 @@ export default function ReportsPage() {
       const bloodWorkData = bloodWorkResponse.ok ? await bloodWorkResponse.json() : { data: [] };
       const doctorVisitsData = doctorVisitsResponse.ok ? await doctorVisitsResponse.json() : { data: [] };
       const goalsData = goalsResponse.ok ? await goalsResponse.json() : { data: [] };
+      const medicationsData = medicationsResponse.ok ? await medicationsResponse.json() : { data: [] };
+      const userProfileData = userProfileResponse.ok ? await userProfileResponse.json() : null;
 
       setReportData({
         bloodPressure: bpData.data || [],
         weight: weightData.data || [],
         bloodWork: bloodWorkData.data || [],
         doctorVisits: doctorVisitsData.data || [],
-        goals: goalsData.data || []
+        goals: goalsData.data || [],
+        medications: medicationsData.data || []
       });
+
+      // Set personal information if available
+      if (userProfileData && !userProfileData.error) {
+        setPersonalInfo({
+          firstName: userProfileData.firstName || '',
+          lastName: userProfileData.lastName || '',
+          email: userProfileData.email || '',
+          birthdate: userProfileData.birthdate,
+          address: userProfileData.address,
+          phone: userProfileData.phone
+        });
+      }
     } catch (error) {
       console.error('Error fetching report data:', error);
       toast.error('Failed to load report data');
@@ -180,19 +225,20 @@ export default function ReportsPage() {
         dataTypes: reportConfig.dataTypes,
         summary: generateSummary(),
         data: filterDataByDateRange(),
-        charts: reportConfig.includeCharts ? generateChartData() : null
+        charts: generateChartData()
       };
 
       // Export based on format
       if (reportConfig.format === 'json') {
         exportAsJSON(reportContent);
+        toast.success('Report exported as JSON');
       } else if (reportConfig.format === 'csv') {
         exportAsCSV(reportContent);
+        toast.success('Report exported as CSV');
       } else {
-        exportAsPDF(reportContent);
+        await exportAsPDF(reportContent);
+        // PDF success message is handled in exportAsPDF
       }
-
-      toast.success('Report generated successfully');
     } catch (error) {
       console.error('Error generating report:', error);
       toast.error('Failed to generate report');
@@ -202,28 +248,43 @@ export default function ReportsPage() {
   };
 
   const generateSummary = () => {
+    // Only count records for selected data types
     const totalRecords = 
-      reportData.bloodPressure.length +
-      reportData.weight.length +
-      reportData.bloodWork.length +
-      reportData.doctorVisits.length +
-      reportData.goals.length;
+      (reportConfig.dataTypes.includes('bloodPressure') ? reportData.bloodPressure.length : 0) +
+      (reportConfig.dataTypes.includes('weight') ? reportData.weight.length : 0) +
+      (reportConfig.dataTypes.includes('bloodWork') ? reportData.bloodWork.length : 0) +
+      (reportConfig.dataTypes.includes('doctorVisits') ? reportData.doctorVisits.length : 0) +
+      (reportConfig.dataTypes.includes('goals') ? reportData.goals.length : 0) +
+      (reportConfig.dataTypes.includes('medications') ? reportData.medications.length : 0);
 
-    const completedGoals = reportData.goals.filter((goal: GoalData) => goal.status === 'completed').length;
-    const activeGoals = reportData.goals.filter((goal: GoalData) => goal.status === 'active').length;
+    const completedGoals = reportConfig.dataTypes.includes('goals') 
+      ? reportData.goals.filter((goal: GoalData) => goal.status === 'completed').length 
+      : 0;
+    const activeGoals = reportConfig.dataTypes.includes('goals')
+      ? reportData.goals.filter((goal: GoalData) => goal.status === 'active').length 
+      : 0;
+    const activeMedications = reportConfig.dataTypes.includes('medications')
+      ? reportData.medications.filter((med: MedicationData) => med.status === 'active').length 
+      : 0;
 
     return {
       totalRecords,
-      bloodPressureReadings: reportData.bloodPressure.length,
-      weightRecords: reportData.weight.length,
-      bloodWorkTests: reportData.bloodWork.length,
-      doctorVisits: reportData.doctorVisits.length,
-      goals: {
+      bloodPressureReadings: reportConfig.dataTypes.includes('bloodPressure') ? reportData.bloodPressure.length : 0,
+      weightRecords: reportConfig.dataTypes.includes('weight') ? reportData.weight.length : 0,
+      bloodWorkTests: reportConfig.dataTypes.includes('bloodWork') ? reportData.bloodWork.length : 0,
+      doctorVisits: reportConfig.dataTypes.includes('doctorVisits') ? reportData.doctorVisits.length : 0,
+      goals: reportConfig.dataTypes.includes('goals') ? {
         total: reportData.goals.length,
         completed: completedGoals,
         active: activeGoals,
         overdue: reportData.goals.filter((goal: GoalData) => goal.status === 'overdue').length
-      }
+      } : { total: 0, completed: 0, active: 0, overdue: 0 },
+      medications: reportConfig.dataTypes.includes('medications') ? {
+        total: reportData.medications.length,
+        active: activeMedications,
+        completed: reportData.medications.filter((med: MedicationData) => med.status === 'completed').length,
+        discontinued: reportData.medications.filter((med: MedicationData) => med.status === 'discontinued').length
+      } : { total: 0, active: 0, completed: 0, discontinued: 0 }
     };
   };
 
@@ -248,42 +309,84 @@ export default function ReportsPage() {
         daysAgo = new Date(0); // All data
     }
 
-    return {
-      bloodPressure: reportData.bloodPressure.filter((record: BloodPressureData) => 
+    const filteredData: {
+      bloodPressure?: BloodPressureData[];
+      weight?: WeightData[];
+      bloodWork?: BloodWorkData[];
+      doctorVisits?: DoctorVisitData[];
+      goals?: GoalData[];
+      medications?: MedicationData[];
+    } = {};
+
+    // Only include data types that are selected in the configuration
+    if (reportConfig.dataTypes.includes('bloodPressure')) {
+      filteredData.bloodPressure = reportData.bloodPressure.filter((record: BloodPressureData) => 
         new Date(record.date) >= daysAgo
-      ),
-      weight: reportData.weight.filter((record: WeightData) => 
+      );
+    }
+
+    if (reportConfig.dataTypes.includes('weight')) {
+      filteredData.weight = reportData.weight.filter((record: WeightData) => 
         new Date(record.date) >= daysAgo
-      ),
-      bloodWork: reportData.bloodWork.filter((record: BloodWorkData) => 
+      );
+    }
+
+    if (reportConfig.dataTypes.includes('bloodWork')) {
+      filteredData.bloodWork = reportData.bloodWork.filter((record: BloodWorkData) => 
         new Date(record.testDate) >= daysAgo
-      ),
-      doctorVisits: reportData.doctorVisits.filter((record: DoctorVisitData) => 
+      );
+    }
+
+    if (reportConfig.dataTypes.includes('doctorVisits')) {
+      filteredData.doctorVisits = reportData.doctorVisits.filter((record: DoctorVisitData) => 
         new Date(record.visitDate) >= daysAgo
-      ),
-      goals: reportData.goals.filter((record: GoalData) => 
+      );
+    }
+
+    if (reportConfig.dataTypes.includes('goals')) {
+      filteredData.goals = reportData.goals.filter((record: GoalData) => 
         new Date(record.startDate) >= daysAgo
-      )
-    };
+      );
+    }
+
+    if (reportConfig.dataTypes.includes('medications')) {
+      // Medications should be included regardless of start date - they are current medications
+      // Only filter by status if needed (active, completed, etc.)
+      filteredData.medications = reportData.medications;
+    }
+
+    return filteredData;
   };
 
   const generateChartData = () => {
-    // Generate chart data for visualization
-    return {
-      bloodPressure: {
+    // Generate chart data for visualization - only for selected data types
+    const chartData: Record<string, {
+      labels: string[];
+      systolic?: number[];
+      diastolic?: number[];
+      values?: number[];
+    }> = {};
+
+    if (reportConfig.dataTypes.includes('bloodPressure')) {
+      chartData.bloodPressure = {
         labels: reportData.bloodPressure.slice(0, 10).map((record: BloodPressureData) => 
           new Date(record.date).toLocaleDateString()
         ),
         systolic: reportData.bloodPressure.slice(0, 10).map((record: BloodPressureData) => record.systolic),
         diastolic: reportData.bloodPressure.slice(0, 10).map((record: BloodPressureData) => record.diastolic)
-      },
-      weight: {
+      };
+    }
+
+    if (reportConfig.dataTypes.includes('weight')) {
+      chartData.weight = {
         labels: reportData.weight.slice(0, 10).map((record: WeightData) => 
           new Date(record.date).toLocaleDateString()
         ),
         values: reportData.weight.slice(0, 10).map((record: WeightData) => record.weight)
-      }
-    };
+      };
+    }
+
+    return chartData;
   };
 
   const exportAsJSON = (content: ReportContent) => {
@@ -311,9 +414,124 @@ export default function ReportsPage() {
     toast.success('Report exported as CSV');
   };
 
-  const exportAsPDF = (content: ReportContent) => {
-    // Simulate PDF generation
-    toast.success('PDF report generated successfully');
+  const exportAsPDF = async (content: ReportContent) => {
+    try {
+      // Validate that we have data to generate PDF
+      const hasData = Object.values(content.data).some(data => 
+        Array.isArray(data) && data.length > 0
+      );
+      
+      if (!hasData) {
+        toast.error('No data available to generate PDF report');
+        return;
+      }
+      
+      // Prepare data for PDF generation - map to expected format
+      const pdfData = {
+        bloodPressure: Array.isArray(content.data.bloodPressure) 
+          ? content.data.bloodPressure.map((record: BloodPressureData) => ({
+              systolic: record.systolic,
+              diastolic: record.diastolic,
+              pulse: record.pulse,
+              date: record.date,
+              category: record.category,
+              notes: record.notes
+            }))
+          : [],
+        bloodWork: Array.isArray(content.data.bloodWork)
+          ? content.data.bloodWork.map((record: BloodWorkData) => ({
+              testName: record.testName,
+              testDate: record.testDate,
+              results: record.results,
+              category: record.category
+            }))
+          : [],
+        doctorVisits: Array.isArray(content.data.doctorVisits)
+          ? content.data.doctorVisits.map((record: DoctorVisitData) => ({
+              doctorName: record.doctorName,
+              specialty: record.specialty,
+              visitDate: record.visitDate,
+              visitType: record.visitType,
+              status: record.status,
+              diagnosis: record.diagnosis,
+              cost: record.cost
+            }))
+          : [],
+        weight: Array.isArray(content.data.weight)
+          ? content.data.weight.map((record: WeightData) => ({
+              weight: record.weight,
+              height: record.height,
+              unit: record.unit,
+              heightUnit: record.heightUnit,
+              date: record.date,
+              notes: record.notes
+            }))
+          : [],
+        medications: Array.isArray(content.data.medications)
+          ? content.data.medications.map((record: MedicationData) => ({
+              name: record.name,
+              dosage: record.dosage,
+              frequency: record.frequency,
+              duration: record.duration,
+              startDate: record.startDate,
+              endDate: record.endDate,
+              status: record.status,
+              category: record.category,
+              prescribedBy: record.prescribedBy,
+              pharmacy: record.pharmacy,
+              notes: record.notes,
+              sideEffects: record.sideEffects,
+              interactions: record.interactions
+            }))
+          : []
+      };
+
+      // Debug logging to check medication data
+      console.log('Medications being sent to PDF:', pdfData.medications);
+      console.log('Number of medications:', pdfData.medications.length);
+
+      // Generate PDF using the existing service
+      const pdfBuffer = await generateHealthDataPDF({
+        patientName: personalInfo?.firstName || 'Your Health Data', // You can customize this
+        reportDate: new Date().toLocaleDateString(),
+        dataTypes: content.dataTypes,
+        sharedData: pdfData,
+        expiresInDays: 30,
+        personalInfo: personalInfo ? {
+          firstName: personalInfo.firstName,
+          lastName: personalInfo.lastName,
+          email: personalInfo.email,
+          birthdate: personalInfo?.birthdate ? new Date(personalInfo.birthdate) : undefined,
+          address: personalInfo?.address,
+          phone: personalInfo?.phone
+        } : undefined,
+        birthdate: personalInfo?.birthdate ? new Date(personalInfo.birthdate) : undefined,
+        address: personalInfo?.address,
+        includeCharts: true,
+        includeSummary: true
+      });
+
+      // Create blob and download
+      const blob = new Blob([pdfBuffer], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Create a more descriptive filename
+      const dateRange = content.dateRange === 'all' ? 'all-time' : content.dateRange;
+      const dataTypes = content.dataTypes.join('-');
+      link.download = `health-report-${dataTypes}-${dateRange}-${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      link.click();
+      URL.revokeObjectURL(url);
+      
+      toast.success('PDF report generated successfully');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF report. Please try again.');
+    } finally {
+      // setIsGeneratingPDF(false); // This line is removed
+    }
   };
 
   const convertToCSV = (content: ReportContent): string => {
@@ -333,24 +551,35 @@ export default function ReportsPage() {
       });
     }
 
-    return csvContent;
-  };
-
-  const getDataTypeIcon = (type: string) => {
-    switch (type) {
-      case 'bloodPressure':
-        return <Activity className="h-4 w-4 text-red-500" />;
-      case 'weight':
-        return <Scale className="h-4 w-4 text-orange-500" />;
-      case 'bloodWork':
-        return <FileText className="h-4 w-4 text-blue-500" />;
-      case 'doctorVisits':
-        return <Stethoscope className="h-4 w-4 text-green-500" />;
-      case 'goals':
-        return <TrendingUp className="h-4 w-4 text-purple-500" />;
-      default:
-        return <FileText className="h-4 w-4 text-gray-500" />;
+    // Add blood work data
+    if (content.data.bloodWork && Array.isArray(content.data.bloodWork)) {
+      (content.data.bloodWork as BloodWorkData[]).forEach((record) => {
+        csvContent += `Blood Work,${record.testDate},${record.testName},${record.category}\n`;
+      });
     }
+
+    // Add doctor visits data
+    if (content.data.doctorVisits && Array.isArray(content.data.doctorVisits)) {
+      (content.data.doctorVisits as DoctorVisitData[]).forEach((record) => {
+        csvContent += `Doctor Visit,${record.visitDate},${record.doctorName} - ${record.specialty},${record.visitType}\n`;
+      });
+    }
+
+    // Add goals data
+    if (content.data.goals && Array.isArray(content.data.goals)) {
+      (content.data.goals as GoalData[]).forEach((record) => {
+        csvContent += `Goal,${record.startDate},${record.title} - ${record.currentValue}/${record.targetValue} ${record.unit},${record.status}\n`;
+      });
+    }
+
+    // Add medications data
+    if (content.data.medications && Array.isArray(content.data.medications)) {
+      (content.data.medications as MedicationData[]).forEach((record) => {
+        csvContent += `Medication,${record.startDate},${record.name} - ${record.dosage},${record.frequency}\n`;
+      });
+    }
+
+    return csvContent;
   };
 
   const getFormatIcon = (format: string) => {
@@ -393,6 +622,19 @@ export default function ReportsPage() {
             <p className="text-gray-600">Generate and export your health data</p>
           </div>
         </div>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              fetchReportData();
+              toast.success('Reports data refreshed');
+            }}
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Report Configuration */}
@@ -413,7 +655,8 @@ export default function ReportsPage() {
                 { key: 'weight', label: 'Weight & BMI', icon: <Scale className="h-4 w-4" /> },
                 { key: 'bloodWork', label: 'Blood Work', icon: <FileText className="h-4 w-4" /> },
                 { key: 'doctorVisits', label: 'Doctor Visits', icon: <Stethoscope className="h-4 w-4" /> },
-                { key: 'goals', label: 'Health Goals', icon: <TrendingUp className="h-4 w-4" /> }
+                { key: 'goals', label: 'Health Goals', icon: <TrendingUp className="h-4 w-4" /> },
+                { key: 'medications', label: 'Medications', icon: <Pill className="h-4 w-4" /> }
               ].map((dataType) => (
                 <div key={dataType.key} className="flex items-center space-x-2">
                   <Checkbox
@@ -473,28 +716,6 @@ export default function ReportsPage() {
                 </SelectContent>
               </Select>
             </div>
-
-            <div>
-              <label className="text-sm font-medium">Options</label>
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="includeCharts"
-                    checked={reportConfig.includeCharts}
-                    onCheckedChange={(checked) => setReportConfig({ ...reportConfig, includeCharts: !!checked })}
-                  />
-                  <label htmlFor="includeCharts" className="text-sm">Include charts</label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="includeSummary"
-                    checked={reportConfig.includeSummary}
-                    onCheckedChange={(checked) => setReportConfig({ ...reportConfig, includeSummary: !!checked })}
-                  />
-                  <label htmlFor="includeSummary" className="text-sm">Include summary</label>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Generate Button */}
@@ -506,7 +727,7 @@ export default function ReportsPage() {
             {isGenerating ? (
               <>
                 <Clock className="h-4 w-4 mr-2 animate-spin" />
-                Generating Report...
+                {reportConfig.format === 'pdf' ? 'Generating PDF...' : 'Generating Report...'}
               </>
             ) : (
               <>
@@ -519,7 +740,7 @@ export default function ReportsPage() {
       </Card>
 
       {/* Data Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Blood Pressure</CardTitle>
@@ -563,82 +784,15 @@ export default function ReportsPage() {
             <p className="text-xs text-muted-foreground">objectives</p>
           </CardContent>
         </Card>
-      </div>
 
-      {/* Quick Export Options */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <File className="h-5 w-5 text-red-500" />
-              <span>Quick PDF Report</span>
-            </CardTitle>
-            <CardDescription>
-              Generate a comprehensive PDF report
-            </CardDescription>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Medications</CardTitle>
+            <Pill className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => {
-                setReportConfig({ ...reportConfig, format: 'pdf' });
-                generateReport();
-              }}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Export PDF
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <FileSpreadsheet className="h-5 w-5 text-green-500" />
-              <span>Data Export</span>
-            </CardTitle>
-            <CardDescription>
-              Export raw data in CSV format
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => {
-                setReportConfig({ ...reportConfig, format: 'csv' });
-                generateReport();
-              }}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Export CSV
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <FileJson className="h-5 w-5 text-blue-500" />
-              <span>JSON Export</span>
-            </CardTitle>
-            <CardDescription>
-              Export data in JSON format
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => {
-                setReportConfig({ ...reportConfig, format: 'json' });
-                generateReport();
-              }}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Export JSON
-            </Button>
+            <div className="text-2xl font-bold">{reportData.medications.length}</div>
+            <p className="text-xs text-muted-foreground">prescriptions</p>
           </CardContent>
         </Card>
       </div>
