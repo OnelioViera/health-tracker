@@ -96,6 +96,83 @@ const UserProfileSchema = new mongoose.Schema({
         },
       },
     },
+    // PDF preferences for prescription downloads
+    pdfPreferences: {
+      patientName: {
+        type: String,
+        default: '',
+      },
+      patientInfo: {
+        dateOfBirth: {
+          type: String,
+          default: '',
+        },
+        address: {
+          type: String,
+          default: '',
+        },
+        phone: {
+          type: String,
+          default: '',
+        },
+        email: {
+          type: String,
+          default: '',
+        },
+      },
+      doctorInfo: {
+        name: {
+          type: String,
+          default: '',
+        },
+        license: {
+          type: String,
+          default: '',
+        },
+        specialty: {
+          type: String,
+          default: '',
+        },
+        phone: {
+          type: String,
+          default: '',
+        },
+        address: {
+          type: String,
+          default: '',
+        },
+      },
+      pharmacyInfo: {
+        name: {
+          type: String,
+          default: '',
+        },
+        address: {
+          type: String,
+          default: '',
+        },
+        phone: {
+          type: String,
+          default: '',
+        },
+      },
+      includeActiveOnly: {
+        type: Boolean,
+        default: true,
+      },
+      includeNotes: {
+        type: Boolean,
+        default: true,
+      },
+      includeSideEffects: {
+        type: Boolean,
+        default: true,
+      },
+      includeInteractions: {
+        type: Boolean,
+        default: true,
+      },
+    },
   },
 }, {
   timestamps: true,

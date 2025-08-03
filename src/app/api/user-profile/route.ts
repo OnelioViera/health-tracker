@@ -110,6 +110,31 @@ export async function POST(request: NextRequest) {
               quietHoursStart: '22:00',
               quietHoursEnd: '08:00'
             }
+          },
+          pdfPreferences: {
+            patientName: '',
+            patientInfo: {
+              dateOfBirth: '',
+              address: '',
+              phone: '',
+              email: '',
+            },
+            doctorInfo: {
+              name: '',
+              license: '',
+              specialty: '',
+              phone: '',
+              address: '',
+            },
+            pharmacyInfo: {
+              name: '',
+              address: '',
+              phone: '',
+            },
+            includeActiveOnly: true,
+            includeNotes: true,
+            includeSideEffects: true,
+            includeInteractions: true,
           }
         },
         createdAt: new Date(),
@@ -155,6 +180,31 @@ export async function POST(request: NextRequest) {
             quietHoursStart: '10:00 PM',
             quietHoursEnd: '8:00 AM'
           }
+        },
+        pdfPreferences: {
+          patientName: '',
+          patientInfo: {
+            dateOfBirth: '',
+            address: '',
+            phone: '',
+            email: '',
+          },
+          doctorInfo: {
+            name: '',
+            license: '',
+            specialty: '',
+            phone: '',
+            address: '',
+          },
+          pharmacyInfo: {
+            name: '',
+            address: '',
+            phone: '',
+          },
+          includeActiveOnly: true,
+          includeNotes: true,
+          includeSideEffects: true,
+          includeInteractions: true,
         }
       };
       userProfile.updatedAt = new Date();
@@ -192,6 +242,31 @@ export async function POST(request: NextRequest) {
               quietHoursStart: '10:00 PM',
               quietHoursEnd: '8:00 AM'
             }
+          },
+          pdfPreferences: {
+            patientName: '',
+            patientInfo: {
+              dateOfBirth: '',
+              address: '',
+              phone: '',
+              email: '',
+            },
+            doctorInfo: {
+              name: '',
+              license: '',
+              specialty: '',
+              phone: '',
+              address: '',
+            },
+            pharmacyInfo: {
+              name: '',
+              address: '',
+              phone: '',
+            },
+            includeActiveOnly: true,
+            includeNotes: true,
+            includeSideEffects: true,
+            includeInteractions: true,
           }
         }
       });

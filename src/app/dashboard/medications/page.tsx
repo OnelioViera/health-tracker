@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Pill, Calendar, User, Building, RefreshCw } from "lucide-react";
+import { Plus, Pill, Calendar, User, Building, RefreshCw, Download, FileText, Save } from "lucide-react";
 import BackButton from "@/components/back-button";
 
 interface Medication {
@@ -34,6 +36,34 @@ export default function MedicationsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingMedication, setEditingMedication] = useState<Medication | null>(null);
+  const [showPdfModal, setShowPdfModal] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isSavingPreferences, setIsSavingPreferences] = useState(false);
+  const [pdfOptions, setPdfOptions] = useState({
+    patientName: "",
+    patientInfo: {
+      dateOfBirth: "",
+      address: "",
+      phone: "",
+      email: ""
+    },
+    doctorInfo: {
+      name: "",
+      license: "",
+      specialty: "",
+      phone: "",
+      address: ""
+    },
+    pharmacyInfo: {
+      name: "",
+      address: "",
+      phone: ""
+    },
+    includeActiveOnly: true,
+    includeNotes: true,
+    includeSideEffects: true,
+    includeInteractions: true
+  });
   const [newMedication, setNewMedication] = useState({
     name: "",
     dosage: "",
@@ -51,6 +81,7 @@ export default function MedicationsPage() {
 
   useEffect(() => {
     fetchMedications();
+    loadPdfPreferences();
   }, []);
 
   const fetchMedications = async () => {
@@ -65,6 +96,43 @@ export default function MedicationsPage() {
       toast.error('Failed to load medications');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadPdfPreferences = async () => {
+    try {
+      const response = await fetch('/api/pdf-preferences');
+      if (response.ok) {
+        const preferences = await response.json();
+        setPdfOptions(preferences);
+      }
+    } catch (error) {
+      console.error('Error loading PDF preferences:', error);
+    }
+  };
+
+  const savePdfPreferences = async () => {
+    setIsSavingPreferences(true);
+    try {
+      const response = await fetch('/api/pdf-preferences', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(pdfOptions),
+      });
+
+      if (response.ok) {
+        toast.success('PDF preferences saved as default');
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Failed to save preferences');
+      }
+    } catch (error) {
+      console.error('Error saving PDF preferences:', error);
+      toast.error('Failed to save preferences');
+    } finally {
+      setIsSavingPreferences(false);
     }
   };
 
@@ -148,6 +216,46 @@ export default function MedicationsPage() {
     }
   };
 
+  const handleDownloadPdf = async () => {
+    if (!pdfOptions.patientName.trim()) {
+      toast.error('Patient name is required');
+      return;
+    }
+
+    setIsGeneratingPdf(true);
+    try {
+      const response = await fetch('/api/prescriptions/pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(pdfOptions),
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `prescriptions_${Date.now()}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        toast.success('Prescription PDF downloaded successfully');
+        setShowPdfModal(false);
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Failed to generate PDF');
+      }
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      toast.error('Failed to download PDF');
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
   const startEditing = (medication: Medication) => {
     setEditingMedication(medication);
     setShowAddForm(false);
@@ -188,6 +296,302 @@ export default function MedicationsPage() {
           </div>
         </div>
         <div className="flex items-center space-x-2">
+          <Dialog open={showPdfModal} onOpenChange={setShowPdfModal}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                Download PDF
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Download Prescription PDF</DialogTitle>
+                <DialogDescription>
+                  Configure the options for your prescription PDF download.
+                </DialogDescription>
+                <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                  <p className="text-sm text-blue-700">
+                    💡 Your saved preferences will be automatically loaded. Use &quot;Save as Default&quot; to remember your settings for future downloads.
+                  </p>
+                </div>
+              </DialogHeader>
+              <div className="space-y-6">
+                {/* Patient Information */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Patient Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="patientName">Patient Name *</Label>
+                      <Input
+                        id="patientName"
+                        value={pdfOptions.patientName}
+                        onChange={(e) => setPdfOptions({ ...pdfOptions, patientName: e.target.value })}
+                        placeholder="Enter patient name"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                      <Input
+                        id="dateOfBirth"
+                        type="date"
+                        value={pdfOptions.patientInfo.dateOfBirth}
+                        onChange={(e) => setPdfOptions({
+                          ...pdfOptions,
+                          patientInfo: { ...pdfOptions.patientInfo, dateOfBirth: e.target.value }
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="patientPhone">Phone</Label>
+                      <Input
+                        id="patientPhone"
+                        value={pdfOptions.patientInfo.phone}
+                        onChange={(e) => setPdfOptions({
+                          ...pdfOptions,
+                          patientInfo: { ...pdfOptions.patientInfo, phone: e.target.value }
+                        })}
+                        placeholder="Phone number"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="patientEmail">Email</Label>
+                      <Input
+                        id="patientEmail"
+                        type="email"
+                        value={pdfOptions.patientInfo.email}
+                        onChange={(e) => setPdfOptions({
+                          ...pdfOptions,
+                          patientInfo: { ...pdfOptions.patientInfo, email: e.target.value }
+                        })}
+                        placeholder="Email address"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="patientAddress">Address</Label>
+                    <Textarea
+                      id="patientAddress"
+                      value={pdfOptions.patientInfo.address}
+                      onChange={(e) => setPdfOptions({
+                        ...pdfOptions,
+                        patientInfo: { ...pdfOptions.patientInfo, address: e.target.value }
+                      })}
+                      placeholder="Full address"
+                    />
+                  </div>
+                </div>
+
+                {/* Doctor Information */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Doctor Information (Optional)</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="doctorName">Doctor Name</Label>
+                      <Input
+                        id="doctorName"
+                        value={pdfOptions.doctorInfo.name}
+                        onChange={(e) => setPdfOptions({
+                          ...pdfOptions,
+                          doctorInfo: { ...pdfOptions.doctorInfo, name: e.target.value }
+                        })}
+                        placeholder="Dr. Smith"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="doctorLicense">License Number</Label>
+                      <Input
+                        id="doctorLicense"
+                        value={pdfOptions.doctorInfo.license}
+                        onChange={(e) => setPdfOptions({
+                          ...pdfOptions,
+                          doctorInfo: { ...pdfOptions.doctorInfo, license: e.target.value }
+                        })}
+                        placeholder="License number"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="doctorSpecialty">Specialty</Label>
+                      <Input
+                        id="doctorSpecialty"
+                        value={pdfOptions.doctorInfo.specialty}
+                        onChange={(e) => setPdfOptions({
+                          ...pdfOptions,
+                          doctorInfo: { ...pdfOptions.doctorInfo, specialty: e.target.value }
+                        })}
+                        placeholder="Cardiology"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="doctorPhone">Phone</Label>
+                      <Input
+                        id="doctorPhone"
+                        value={pdfOptions.doctorInfo.phone}
+                        onChange={(e) => setPdfOptions({
+                          ...pdfOptions,
+                          doctorInfo: { ...pdfOptions.doctorInfo, phone: e.target.value }
+                        })}
+                        placeholder="Doctor's phone"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="doctorAddress">Doctor Address</Label>
+                    <Textarea
+                      id="doctorAddress"
+                      value={pdfOptions.doctorInfo.address}
+                      onChange={(e) => setPdfOptions({
+                        ...pdfOptions,
+                        doctorInfo: { ...pdfOptions.doctorInfo, address: e.target.value }
+                      })}
+                      placeholder="Doctor's address"
+                    />
+                  </div>
+                </div>
+
+                {/* Pharmacy Information */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Pharmacy Information (Optional)</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="pharmacyName">Pharmacy Name</Label>
+                      <Input
+                        id="pharmacyName"
+                        value={pdfOptions.pharmacyInfo.name}
+                        onChange={(e) => setPdfOptions({
+                          ...pdfOptions,
+                          pharmacyInfo: { ...pdfOptions.pharmacyInfo, name: e.target.value }
+                        })}
+                        placeholder="CVS Pharmacy"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="pharmacyPhone">Phone</Label>
+                      <Input
+                        id="pharmacyPhone"
+                        value={pdfOptions.pharmacyInfo.phone}
+                        onChange={(e) => setPdfOptions({
+                          ...pdfOptions,
+                          pharmacyInfo: { ...pdfOptions.pharmacyInfo, phone: e.target.value }
+                        })}
+                        placeholder="Pharmacy phone"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="pharmacyAddress">Pharmacy Address</Label>
+                    <Textarea
+                      id="pharmacyAddress"
+                      value={pdfOptions.pharmacyInfo.address}
+                      onChange={(e) => setPdfOptions({
+                        ...pdfOptions,
+                        pharmacyInfo: { ...pdfOptions.pharmacyInfo, address: e.target.value }
+                      })}
+                      placeholder="Pharmacy address"
+                    />
+                  </div>
+                </div>
+
+                {/* PDF Options */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">PDF Options</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="includeActiveOnly"
+                        checked={pdfOptions.includeActiveOnly}
+                        onCheckedChange={(checked) => setPdfOptions({
+                          ...pdfOptions,
+                          includeActiveOnly: checked as boolean
+                        })}
+                      />
+                      <Label htmlFor="includeActiveOnly">Include active prescriptions only</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="includeNotes"
+                        checked={pdfOptions.includeNotes}
+                        onCheckedChange={(checked) => setPdfOptions({
+                          ...pdfOptions,
+                          includeNotes: checked as boolean
+                        })}
+                      />
+                      <Label htmlFor="includeNotes">Include medication notes</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="includeSideEffects"
+                        checked={pdfOptions.includeSideEffects}
+                        onCheckedChange={(checked) => setPdfOptions({
+                          ...pdfOptions,
+                          includeSideEffects: checked as boolean
+                        })}
+                      />
+                      <Label htmlFor="includeSideEffects">Include side effects</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="includeInteractions"
+                        checked={pdfOptions.includeInteractions}
+                        onCheckedChange={(checked) => setPdfOptions({
+                          ...pdfOptions,
+                          includeInteractions: checked as boolean
+                        })}
+                      />
+                      <Label htmlFor="includeInteractions">Include drug interactions</Label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col space-y-3 pt-4">
+                  <div className="flex space-x-4">
+                    <Button 
+                      onClick={handleDownloadPdf} 
+                      disabled={isGeneratingPdf || !pdfOptions.patientName.trim()}
+                      className="flex-1"
+                    >
+                      {isGeneratingPdf ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                          Generating PDF...
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="h-4 w-4 mr-2" />
+                          Download PDF
+                        </>
+                      )}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setShowPdfModal(false)}
+                      disabled={isGeneratingPdf}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                  <Button 
+                    variant="secondary" 
+                    onClick={savePdfPreferences}
+                    disabled={isSavingPreferences || !pdfOptions.patientName.trim()}
+                    className="w-full"
+                  >
+                    {isSavingPreferences ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        Save as Default
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
           <Button
             variant="outline"
             size="sm"
