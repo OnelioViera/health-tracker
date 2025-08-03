@@ -102,13 +102,33 @@ export async function PUT(
     await doctorVisit.save();
 
     // Update the corresponding calendar event
-    const calendarEvent = await CalendarEvent.findOne({
+    // Try multiple search strategies to find the correct calendar event
+    let calendarEvent = await CalendarEvent.findOne({
       userId,
       title: { $regex: doctorVisit.visitType, $options: 'i' },
       date: body.visitDate,
     });
 
+    // If not found, try searching by doctor name and date
+    if (!calendarEvent) {
+      calendarEvent = await CalendarEvent.findOne({
+        userId,
+        doctor: { $regex: doctorVisit.doctorName, $options: 'i' },
+        date: body.visitDate,
+      });
+    }
+
+    // If still not found, try searching by date and type
+    if (!calendarEvent) {
+      calendarEvent = await CalendarEvent.findOne({
+        userId,
+        type: 'appointment',
+        date: body.visitDate,
+      });
+    }
+
     if (calendarEvent) {
+      console.log('Found calendar event to update:', calendarEvent.title);
       calendarEvent.title = `${body.visitType} - ${body.doctorName}`;
       calendarEvent.date = body.visitDate;
       calendarEvent.time = body.visitTime || '9:00 AM';
@@ -119,6 +139,25 @@ export async function PUT(
       calendarEvent.updatedAt = new Date();
       
       await calendarEvent.save();
+      console.log('Calendar event updated successfully. New status:', calendarEvent.status);
+    } else {
+      console.log('No matching calendar event found for doctor visit:', doctorVisit._id);
+      // Create a new calendar event if none exists
+      const newCalendarEvent = new CalendarEvent({
+        userId,
+        title: `${body.visitType} - ${body.doctorName}`,
+        type: 'appointment',
+        date: body.visitDate,
+        time: body.visitTime || '9:00 AM',
+        doctor: body.doctorName,
+        location: body.location,
+        status: body.status === 'completed' ? 'completed' : 'upcoming',
+        color: 'blue',
+        notes: body.notes || `Visit type: ${body.visitType}${body.specialty ? `, Specialty: ${body.specialty}` : ''}`
+      });
+      
+      await newCalendarEvent.save();
+      console.log('Created new calendar event for completed appointment');
     }
 
     return NextResponse.json(doctorVisit);

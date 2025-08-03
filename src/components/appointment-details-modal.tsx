@@ -24,6 +24,7 @@ import {
   CheckCircle,
   X
 } from "lucide-react";
+import { toast } from "sonner";
 
 interface Medication {
   name: string;
@@ -57,15 +58,18 @@ interface AppointmentDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   appointmentId: string | null;
+  onStatusUpdate?: () => void; // Add callback for status updates
 }
 
 export default function AppointmentDetailsModal({ 
   isOpen, 
   onClose, 
-  appointmentId 
+  appointmentId,
+  onStatusUpdate
 }: AppointmentDetailsModalProps) {
   const [appointment, setAppointment] = useState<AppointmentDetails | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   useEffect(() => {
     if (isOpen && appointmentId) {
@@ -122,6 +126,48 @@ export default function AppointmentDetailsModal({
     }
   };
 
+  const handleMarkAsCompleted = async () => {
+    if (!appointmentId) return;
+    
+    setIsUpdatingStatus(true);
+    try {
+      const response = await fetch(`/api/doctor-visits/${appointmentId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...appointment,
+          status: 'completed',
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Appointment marked as completed');
+        // Update the local state
+        setAppointment(prev => prev ? { ...prev, status: 'completed' } : null);
+        // Notify parent component to refresh
+        onStatusUpdate?.();
+      } else {
+        console.error('Failed to update appointment status');
+        toast.error('Failed to update appointment status');
+      }
+    } catch (error) {
+      console.error('Error updating appointment status:', error);
+      toast.error('Error updating appointment status');
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  // Check if appointment is past due
+  const isPastDue = () => {
+    if (!appointment) return false;
+    const visitDate = new Date(appointment.visitDate);
+    const now = new Date();
+    return appointment.status === 'scheduled' && visitDate < now;
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -131,6 +177,11 @@ export default function AppointmentDetailsModal({
           <DialogTitle className="flex items-center space-x-2">
             <Stethoscope className="h-5 w-5 text-blue-600" />
             <span>Appointment Details</span>
+            {isPastDue() && (
+              <Badge variant="destructive" className="ml-2">
+                Past Due
+              </Badge>
+            )}
           </DialogTitle>
           <DialogDescription>
             Detailed information about your medical appointment
@@ -150,6 +201,11 @@ export default function AppointmentDetailsModal({
                   {appointment.visitType} - {appointment.doctorName}
                 </h3>
                 <p className="text-gray-600">{appointment.specialty}</p>
+                {isPastDue() && (
+                  <p className="text-sm text-red-600 mt-1">
+                    ⚠️ This appointment was scheduled for {new Date(appointment.visitDate).toLocaleDateString()} but hasn&apos;t been marked as completed yet.
+                  </p>
+                )}
               </div>
               <Badge className={`${getStatusColor(appointment.status)} flex items-center space-x-1`}>
                 {getStatusIcon(appointment.status)}
@@ -348,6 +404,15 @@ export default function AppointmentDetailsModal({
         )}
 
         <div className="flex justify-end space-x-2 pt-4">
+          {(appointment?.status === 'scheduled' || isPastDue()) && (
+            <Button 
+              onClick={handleMarkAsCompleted}
+              disabled={isUpdatingStatus}
+              className={isPastDue() ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"}
+            >
+              {isUpdatingStatus ? 'Updating...' : isPastDue() ? 'Mark as Completed (Past Due)' : 'Mark as Completed'}
+            </Button>
+          )}
           <Button variant="outline" onClick={onClose}>
             Close
           </Button>

@@ -17,14 +17,26 @@ const mockBloodPressureData: Array<{
   updatedAt: Date;
 }> = [
   {
-    _id: 'mock_latest',
+    _id: 'mock_latest_new',
     userId: 'user_123',
     systolic: 115,
-    diastolic: 73,
+    diastolic: 80,
+    pulse: 62,
+    date: new Date('2025-08-02T05:56:00.000Z'),
+    notes: 'Morning reading',
+    category: 'normal', // 115/80 is normal
+    createdAt: new Date('2025-08-02T05:56:00.000Z'),
+    updatedAt: new Date('2025-08-02T05:56:00.000Z'),
+  },
+  {
+    _id: 'mock_latest',
+    userId: 'user_123',
+    systolic: 106,
+    diastolic: 72,
     pulse: 65,
     date: new Date('2025-07-27T08:31:00.000Z'),
     notes: 'Morning reading',
-    category: 'normal', // 115/73 is normal
+    category: 'normal', // 106/72 is normal
     createdAt: new Date('2025-07-27T08:31:00.000Z'),
     updatedAt: new Date('2025-07-27T08:31:00.000Z'),
   },

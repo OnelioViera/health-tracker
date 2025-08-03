@@ -819,7 +819,10 @@ export default function DashboardPage() {
                 <div className="mt-3">
                   {/* Show the soonest appointment */}
                   {dashboardData.upcomingVisits[0] && (
-                    <DashboardAppointmentCard visit={dashboardData.upcomingVisits[0]} />
+                    <DashboardAppointmentCard 
+                      visit={dashboardData.upcomingVisits[0]} 
+                      onStatusUpdate={fetchLatestData}
+                    />
                   )}
                   {/* View All button */}
                   {dashboardData.upcomingVisits.length > 1 && (

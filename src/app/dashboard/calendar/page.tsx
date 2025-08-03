@@ -414,7 +414,7 @@ export default function CalendarPage() {
             {dayEvents.slice(0, 2).map((event) => (
               <div
                 key={event._id}
-                className={`text-xs p-1 rounded cursor-pointer ${
+                className={`text-xs p-1 rounded cursor-pointer flex items-center justify-between ${
                   event.color === "blue" ? "bg-blue-100 text-blue-800" :
                   event.color === "green" ? "bg-green-100 text-green-800" :
                   event.color === "purple" ? "bg-purple-100 text-purple-800" :
@@ -426,7 +426,10 @@ export default function CalendarPage() {
                   handleEventClick(event);
                 }}
               >
-                {event.title}
+                <span className="truncate flex-1">{event.title}</span>
+                {event.status === 'completed' && (
+                  <CheckCircle className="h-3 w-3 text-green-600 ml-1 flex-shrink-0" />
+                )}
               </div>
             ))}
             {dayEvents.length > 2 && (
@@ -649,9 +652,12 @@ export default function CalendarPage() {
                       {new Date(event.date).toLocaleDateString()} at {event.time}
                     </p>
                   </div>
-                  <Badge variant="secondary" className="text-xs">
-                    Completed
-                  </Badge>
+                  <div className="flex items-center space-x-1">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <Badge variant="secondary" className="text-xs">
+                      Completed
+                    </Badge>
+                  </div>
                 </div>
               ))}
             </CardContent>
@@ -666,6 +672,9 @@ export default function CalendarPage() {
             <DialogTitle className="flex items-center space-x-2">
               <Calendar className="h-5 w-5" />
               <span>{isEditMode ? 'Edit Event' : 'Event Details'}</span>
+              {selectedEvent && selectedEvent.status === 'completed' && !isEditMode && (
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              )}
             </DialogTitle>
           </DialogHeader>
           
@@ -707,11 +716,20 @@ export default function CalendarPage() {
               </div>
               
               <div className="flex items-center justify-between pt-4 border-t">
-                <Badge 
-                  variant={selectedEvent.status === "upcoming" ? "default" : "secondary"}
-                >
-                  {selectedEvent.status}
-                </Badge>
+                <div className="flex items-center space-x-2">
+                  <Badge 
+                    variant={selectedEvent.status === "upcoming" ? "default" : "secondary"}
+                  >
+                    {selectedEvent.status === "completed" ? (
+                      <div className="flex items-center space-x-1">
+                        <CheckCircle className="h-3 w-3" />
+                        <span>Completed</span>
+                      </div>
+                    ) : (
+                      selectedEvent.status
+                    )}
+                  </Badge>
+                </div>
                 <div className="flex space-x-2">
                   <Button
                     variant="outline"

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Blood Pressure Readings</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, textarea { width: 200px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .reading { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>Add Blood Pressure Readings</h1>
+    
+    <div class="reading">
+        <h3>Reading 1: 8/2/2025 at 5:56 AM</h3>
+        <form id="form1">
+            <div class="form-group">
+                <label>Systolic:</label>
+                <input type="number" id="systolic1" value="115" required>
+            </div>
+            <div class="form-group">
+                <label>Diastolic:</label>
+                <input type="number" id="diastolic1" value="80" required>
+            </div>
+            <div class="form-group">
+                <label>Pulse:</label>
+                <input type="number" id="pulse1" value="62">
+            </div>
+            <div class="form-group">
+                <label>Date:</label>
+                <input type="datetime-local" id="date1" value="2025-08-02T05:56" required>
+            </div>
+            <div class="form-group">
+                <label>Notes:</label>
+                <textarea id="notes1">Morning reading</textarea>
+            </div>
+            <button type="submit">Add Reading 1</button>
+        </form>
+    </div>
+
+    <div class="reading">
+        <h3>Reading 2: 8/1/2025 at 7:15 PM</h3>
+        <form id="form2">
+            <div class="form-group">
+                <label>Systolic:</label>
+                <input type="number" id="systolic2" value="106" required>
+            </div>
+            <div class="form-group">
+                <label>Diastolic:</label>
+                <input type="number" id="diastolic2" value="72" required>
+            </div>
+            <div class="form-group">
+                <label>Pulse:</label>
+                <input type="number" id="pulse2" value="60">
+            </div>
+            <div class="form-group">
+                <label>Date:</label>
+                <input type="datetime-local" id="date2" value="2025-08-01T19:15" required>
+            </div>
+            <div class="form-group">
+                <label>Notes:</label>
+                <textarea id="notes2">Evening reading</textarea>
+            </div>
+            <button type="submit">Add Reading 2</button>
+        </form>
+    </div>
+
+    <script>
+        async function addReading(formId) {
+            const form = document.getElementById(formId);
+            const systolic = document.getElementById(`systolic${formId.slice(-1)}`).value;
+            const diastolic = document.getElementById(`diastolic${formId.slice(-1)}`).value;
+            const pulse = document.getElementById(`pulse${formId.slice(-1)}`).value;
+            const date = document.getElementById(`date${formId.slice(-1)}`).value;
+            const notes = document.getElementById(`notes${formId.slice(-1)}`).value;
+
+            const readingData = {
+                systolic: parseInt(systolic),
+                diastolic: parseInt(diastolic),
+                pulse: pulse ? parseInt(pulse) : undefined,
+                date: new Date(date).toISOString(),
+                notes: notes
+            };
+
+            try {
+                const response = await fetch('/api/blood-pressure', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(readingData),
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    alert(`Successfully added reading: ${result.systolic}/${result.diastolic} mmHg`);
+                } else {
+                    const error = await response.text();
+                    alert(`Failed to add reading: ${error}`);
+                }
+            } catch (error) {
+                alert(`Error adding reading: ${error.message}`);
+            }
+        }
+
+        document.getElementById('form1').addEventListener('submit', (e) => {
+            e.preventDefault();
+            addReading('form1');
+        });
+
+        document.getElementById('form2').addEventListener('submit', (e) => {
+            e.preventDefault();
+            addReading('form2');
+        });
+    </script>
+</body>
+</html> 

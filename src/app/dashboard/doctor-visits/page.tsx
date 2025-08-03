@@ -62,8 +62,19 @@ export default function DoctorVisitsPage() {
     fetchDoctorVisits();
   }, []);
 
-  const upcomingVisits = doctorVisits.filter(visit => visit.status === 'scheduled');
-  const completedVisits = doctorVisits.filter(visit => visit.status === 'completed');
+  const upcomingVisits = doctorVisits.filter(visit => {
+    const visitDate = new Date(visit.visitDate);
+    const now = new Date();
+    // Only show as upcoming if it's scheduled AND the date hasn't passed
+    return visit.status === 'scheduled' && visitDate >= now;
+  });
+  
+  const completedVisits = doctorVisits.filter(visit => {
+    const visitDate = new Date(visit.visitDate);
+    const now = new Date();
+    // Show as completed if status is completed OR if the date has passed
+    return visit.status === 'completed' || visitDate < now;
+  });
   const totalCost = doctorVisits.reduce((sum, visit) => sum + (visit.cost || 0), 0);
 
   if (isLoading) {
@@ -175,7 +186,12 @@ export default function DoctorVisitsPage() {
             {upcomingVisits.length > 0 ? (
               <div className="space-y-4">
                 {upcomingVisits.map((visit) => (
-                  <AppointmentCard key={visit._id} visit={visit} isUpcoming={true} />
+                  <AppointmentCard 
+                    key={visit._id} 
+                    visit={visit} 
+                    isUpcoming={true} 
+                    onStatusUpdate={fetchDoctorVisits}
+                  />
                 ))}
               </div>
             ) : (
@@ -205,7 +221,12 @@ export default function DoctorVisitsPage() {
             {completedVisits.length > 0 ? (
               <div className="space-y-4">
                 {completedVisits.slice(0, 5).map((visit) => (
-                  <AppointmentCard key={visit._id} visit={visit} isUpcoming={false} />
+                  <AppointmentCard 
+                    key={visit._id} 
+                    visit={visit} 
+                    isUpcoming={false} 
+                    onStatusUpdate={fetchDoctorVisits}
+                  />
                 ))}
               </div>
             ) : (

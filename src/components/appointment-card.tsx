@@ -40,9 +40,10 @@ interface DoctorVisitData {
 interface AppointmentCardProps {
   visit: DoctorVisitData;
   isUpcoming?: boolean;
+  onStatusUpdate?: () => void; // Add callback for status updates
 }
 
-export default function AppointmentCard({ visit, isUpcoming = false }: AppointmentCardProps) {
+export default function AppointmentCard({ visit, isUpcoming = false, onStatusUpdate }: AppointmentCardProps) {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   const handleViewDetails = () => {
@@ -55,6 +56,13 @@ export default function AppointmentCard({ visit, isUpcoming = false }: Appointme
       return;
     }
     setIsDetailsModalOpen(true);
+  };
+
+  // Check if appointment is past due
+  const isPastDue = () => {
+    const visitDate = new Date(visit.visitDate);
+    const now = new Date();
+    return visit.status === 'scheduled' && visitDate < now;
   };
 
   return (
@@ -101,13 +109,18 @@ export default function AppointmentCard({ visit, isUpcoming = false }: Appointme
           </div>
         </div>
         <div className="flex items-center space-x-2">
+          {isPastDue() && (
+            <Badge variant="destructive" className="text-xs">
+              Past Due
+            </Badge>
+          )}
           <Badge 
             variant="outline" 
             className={isUpcoming ? 'text-blue-600' : 'text-green-600'}
           >
             {visit.status}
           </Badge>
-          <DoctorVisitActions visitId={visit._id} />
+          <DoctorVisitActions visitId={visit._id} onStatusUpdate={onStatusUpdate} />
         </div>
       </div>
 
@@ -115,6 +128,7 @@ export default function AppointmentCard({ visit, isUpcoming = false }: Appointme
         isOpen={isDetailsModalOpen}
         onClose={() => setIsDetailsModalOpen(false)}
         appointmentId={visit._id}
+        onStatusUpdate={onStatusUpdate}
       />
     </>
   );

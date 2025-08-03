@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Stethoscope, Calendar, Eye } from "lucide-react";
 import AppointmentDetailsModal from "./appointment-details-modal";
+import { Badge } from "@/components/ui/badge";
 
 interface DoctorVisit {
   _id: string;
@@ -19,9 +20,10 @@ interface DoctorVisit {
 
 interface DashboardAppointmentCardProps {
   visit: DoctorVisit;
+  onStatusUpdate?: () => void; // Add callback for status updates
 }
 
-export default function DashboardAppointmentCard({ visit }: DashboardAppointmentCardProps) {
+export default function DashboardAppointmentCard({ visit, onStatusUpdate }: DashboardAppointmentCardProps) {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   const handleViewDetails = () => {
@@ -34,6 +36,13 @@ export default function DashboardAppointmentCard({ visit }: DashboardAppointment
       return;
     }
     setIsDetailsModalOpen(true);
+  };
+
+  // Check if appointment is past due
+  const isPastDue = () => {
+    const visitDate = new Date(visit.visitDate);
+    const now = new Date();
+    return visit.status === 'scheduled' && visitDate < now;
   };
 
   return (
@@ -49,6 +58,11 @@ export default function DashboardAppointmentCard({ visit }: DashboardAppointment
               <span className="text-sm font-medium text-blue-900">
                 {visit.visitType} - {visit.specialty}
               </span>
+              {isPastDue() && (
+                <Badge variant="destructive" className="text-xs">
+                  Past Due
+                </Badge>
+              )}
             </div>
             <div className="text-xs text-blue-700">
               <div className="font-medium">{visit.doctorName}</div>
@@ -71,6 +85,7 @@ export default function DashboardAppointmentCard({ visit }: DashboardAppointment
         isOpen={isDetailsModalOpen}
         onClose={() => setIsDetailsModalOpen(false)}
         appointmentId={visit._id}
+        onStatusUpdate={onStatusUpdate}
       />
     </>
   );

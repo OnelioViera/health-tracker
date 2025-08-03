@@ -25,9 +25,10 @@ import AppointmentDetailsModal from "./appointment-details-modal";
 
 interface DoctorVisitActionsProps {
   visitId: string;
+  onStatusUpdate?: () => void; // Add callback for status updates
 }
 
-export default function DoctorVisitActions({ visitId }: DoctorVisitActionsProps) {
+export default function DoctorVisitActions({ visitId, onStatusUpdate }: DoctorVisitActionsProps) {
   const router = useRouter();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -117,6 +118,7 @@ export default function DoctorVisitActions({ visitId }: DoctorVisitActionsProps)
         isOpen={isDetailsModalOpen}
         onClose={() => setIsDetailsModalOpen(false)}
         appointmentId={visitId}
+        onStatusUpdate={onStatusUpdate}
       />
     </>
   );
