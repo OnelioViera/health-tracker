@@ -5,19 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { 
-  Activity, 
   TrendingUp, 
   TrendingDown, 
   Heart, 
   Scale, 
-  Thermometer,
   Calendar,
-  Clock,
   AlertTriangle,
-  CheckCircle,
-  ArrowUp,
-  ArrowDown,
-  Minus,
   RefreshCw
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -91,7 +84,6 @@ interface Insight {
 }
 
 export default function AnalyticsPage() {
-  const [selectedTimeRange, setSelectedTimeRange] = useState("30d");
   const [loading, setLoading] = useState(true);
   const [bloodPressureData, setBloodPressureData] = useState<BloodPressureData[]>([]);
   const [weightData, setWeightData] = useState<WeightData[]>([]);
@@ -169,7 +161,7 @@ export default function AnalyticsPage() {
         previous: previousBP,
         trend,
         status,
-        icon: Activity,
+        icon: Heart,
         color: status === "normal" ? "green" : status === "warning" ? "orange" : "red"
       });
     }
@@ -210,7 +202,7 @@ export default function AnalyticsPage() {
           previous: "N/A",
           trend: "stable",
           status: "normal",
-          icon: Activity,
+          icon: Heart,
           color: "gray"
         },
         {
@@ -323,29 +315,12 @@ export default function AnalyticsPage() {
         title: "Start Tracking",
         description: "Begin recording your health data to see personalized insights here.",
         type: "reminder",
-        icon: Activity,
+        icon: Heart,
         color: "blue"
       });
     }
 
     setInsights(insights);
-  };
-
-  const getMonthlyData = () => {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const currentMonth = new Date().getMonth();
-    
-    return months.slice(Math.max(0, currentMonth - 4), currentMonth + 1).map((month, index) => {
-      const monthIndex = (currentMonth - 4 + index + 12) % 12;
-      const monthData = {
-        month,
-        bloodPressure: bloodPressureData.length > 0 ? bloodPressureData[0].systolic : 120,
-        weight: weightData.length > 0 ? weightData[0].weight : 165,
-        heartRate: bloodPressureData.length > 0 ? bloodPressureData[0].pulse : 72,
-        steps: 8000 + Math.floor(Math.random() * 2000) // Placeholder for steps
-      };
-      return monthData;
-    });
   };
 
   if (loading) {
@@ -359,7 +334,7 @@ export default function AnalyticsPage() {
           </div>
         </div>
         <div className="flex items-center justify-center h-64">
-          <Activity className="h-8 w-8 animate-spin text-blue-500" />
+          <Heart className="h-8 w-8 animate-spin text-blue-500" />
         </div>
       </div>
     );
@@ -439,7 +414,7 @@ export default function AnalyticsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Activity className="h-5 w-5" />
+                <Heart className="h-5 w-5" />
                 <span>Health Trends</span>
               </CardTitle>
               <p className="text-sm text-gray-600">
@@ -521,7 +496,7 @@ export default function AnalyticsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Activity className="h-5 w-5" />
+                <Heart className="h-5 w-5" />
                 <span>Insights</span>
               </CardTitle>
               <p className="text-sm text-gray-600">
@@ -559,7 +534,7 @@ export default function AnalyticsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Activity className="h-5 w-5" />
+                <Heart className="h-5 w-5" />
                 <span>Goals Progress</span>
               </CardTitle>
               <p className="text-sm text-gray-600">
@@ -626,7 +601,7 @@ export default function AnalyticsPage() {
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
-              <Activity className="h-5 w-5 text-blue-500" />
+              <Heart className="h-5 w-5 text-blue-500" />
               <span>Export Report</span>
             </CardTitle>
             <p className="text-sm text-gray-600">
@@ -636,7 +611,7 @@ export default function AnalyticsPage() {
           <CardContent>
             <Link href="/dashboard/reports">
               <Button className="w-full">
-                <Activity className="h-4 w-4 mr-2" />
+                <Heart className="h-4 w-4 mr-2" />
                 Export Report
               </Button>
             </Link>

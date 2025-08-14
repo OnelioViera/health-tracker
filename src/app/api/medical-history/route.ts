@@ -21,7 +21,7 @@ interface MedicalHistoryEntry {
 }
 
 // Mock data storage - in a real app, this would be a database
-let medicalHistoryData: MedicalHistoryEntry[] = [];
+const medicalHistoryData: MedicalHistoryEntry[] = [];
 
 export async function GET(request: NextRequest) {
   try {

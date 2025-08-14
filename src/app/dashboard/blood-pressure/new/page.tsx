@@ -9,8 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Activity, ArrowLeft, Save } from "lucide-react";
-import Link from "next/link";
+import { Activity, Save } from "lucide-react";
 import { toast } from "sonner";
 import BackButton from "@/components/back-button";
 
@@ -227,7 +226,7 @@ export default function NewBloodPressurePage() {
                     value={formData.time ? formData.time.split(':')[0] : '12'}
                     onValueChange={(hour) => {
                       const currentTime = formData.time || '12:00 AM';
-                      const [_, minute, period] = currentTime.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i) || ['', '00', 'AM'];
+                      const [, minute, period] = currentTime.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i) || ['', '00', 'AM'];
                       handleInputChange('time', `${hour}:${minute} ${period}`);
                     }}
                   >
@@ -247,7 +246,7 @@ export default function NewBloodPressurePage() {
                     value={formData.time ? formData.time.split(':')[1]?.split(' ')[0] : '00'}
                     onValueChange={(minute) => {
                       const currentTime = formData.time || '12:00 AM';
-                      const [hour, _, period] = currentTime.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i) || ['12', '00', 'AM'];
+                      const [hour, , period] = currentTime.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i) || ['12', '00', 'AM'];
                       handleInputChange('time', `${hour}:${minute} ${period}`);
                     }}
                   >
