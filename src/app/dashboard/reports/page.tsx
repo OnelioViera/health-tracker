@@ -42,18 +42,20 @@ interface WeightData {
   notes?: string;
 }
 
-interface BloodWorkData {
+interface MedicalHistoryData {
   _id: string;
-  testName: string;
-  testDate: string;
-  results: Array<{
-    parameter: string;
-    value: number;
-    unit: string;
-    referenceRange: { min: number; max: number };
-    status: string;
-  }>;
-  category: string;
+  condition: string;
+  diagnosisDate: Date;
+  severity: 'mild' | 'moderate' | 'severe';
+  status: 'active' | 'resolved' | 'chronic';
+  symptoms: string[];
+  treatments: string[];
+  medications: string[];
+  doctorName?: string;
+  specialty?: string;
+  notes: string;
+  followUpRequired: boolean;
+  followUpDate?: Date;
 }
 
 interface DoctorVisitData {
@@ -84,7 +86,7 @@ interface GoalData {
 interface ReportData {
   bloodPressure: BloodPressureData[];
   weight: WeightData[];
-  bloodWork: BloodWorkData[];
+  medicalHistory: MedicalHistoryData[];
   doctorVisits: DoctorVisitData[];
   goals: GoalData[];
   medications: MedicationData[];
@@ -142,7 +144,7 @@ export default function ReportsPage() {
   const [reportData, setReportData] = useState<ReportData>({
     bloodPressure: [],
     weight: [],
-    bloodWork: [],
+    medicalHistory: [],
     doctorVisits: [],
     goals: [],
     medications: []
@@ -151,7 +153,7 @@ export default function ReportsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [reportConfig, setReportConfig] = useState<ReportConfig>({
-    dataTypes: ['bloodPressure', 'weight', 'bloodWork', 'doctorVisits', 'goals', 'medications'],
+    dataTypes: ['bloodPressure', 'weight', 'medicalHistory', 'doctorVisits', 'goals', 'medications'],
     dateRange: '30d',
     format: 'pdf'
   });
@@ -164,10 +166,10 @@ export default function ReportsPage() {
     try {
       setIsLoading(true);
       
-      const [bpResponse, weightResponse, bloodWorkResponse, doctorVisitsResponse, goalsResponse, medicationsResponse, userProfileResponse] = await Promise.all([
+      const [bpResponse, weightResponse, medicalHistoryResponse, doctorVisitsResponse, goalsResponse, medicationsResponse, userProfileResponse] = await Promise.all([
         fetch('/api/blood-pressure'),
         fetch('/api/weight'),
-        fetch('/api/blood-work'),
+        fetch('/api/medical-history'),
         fetch('/api/doctor-visits'),
         fetch('/api/goals'),
         fetch('/api/medications'),
@@ -176,7 +178,7 @@ export default function ReportsPage() {
 
       const bpData = bpResponse.ok ? await bpResponse.json() : { data: [] };
       const weightData = weightResponse.ok ? await weightResponse.json() : { data: [] };
-      const bloodWorkData = bloodWorkResponse.ok ? await bloodWorkResponse.json() : { data: [] };
+      const medicalHistoryData = medicalHistoryResponse.ok ? await medicalHistoryResponse.json() : { data: [] };
       const doctorVisitsData = doctorVisitsResponse.ok ? await doctorVisitsResponse.json() : { data: [] };
       const goalsData = goalsResponse.ok ? await goalsResponse.json() : { data: [] };
       const medicationsData = medicationsResponse.ok ? await medicationsResponse.json() : { data: [] };
@@ -185,7 +187,7 @@ export default function ReportsPage() {
       setReportData({
         bloodPressure: bpData.data || [],
         weight: weightData.data || [],
-        bloodWork: bloodWorkData.data || [],
+        medicalHistory: medicalHistoryData.data || [],
         doctorVisits: doctorVisitsData.data || [],
         goals: goalsData.data || [],
         medications: medicationsData.data || []
@@ -252,7 +254,7 @@ export default function ReportsPage() {
     const totalRecords = 
       (reportConfig.dataTypes.includes('bloodPressure') ? reportData.bloodPressure.length : 0) +
       (reportConfig.dataTypes.includes('weight') ? reportData.weight.length : 0) +
-      (reportConfig.dataTypes.includes('bloodWork') ? reportData.bloodWork.length : 0) +
+      (reportConfig.dataTypes.includes('medicalHistory') ? reportData.medicalHistory.length : 0) +
       (reportConfig.dataTypes.includes('doctorVisits') ? reportData.doctorVisits.length : 0) +
       (reportConfig.dataTypes.includes('goals') ? reportData.goals.length : 0) +
       (reportConfig.dataTypes.includes('medications') ? reportData.medications.length : 0);
@@ -271,7 +273,7 @@ export default function ReportsPage() {
       totalRecords,
       bloodPressureReadings: reportConfig.dataTypes.includes('bloodPressure') ? reportData.bloodPressure.length : 0,
       weightRecords: reportConfig.dataTypes.includes('weight') ? reportData.weight.length : 0,
-      bloodWorkTests: reportConfig.dataTypes.includes('bloodWork') ? reportData.bloodWork.length : 0,
+      medicalHistoryRecords: reportConfig.dataTypes.includes('medicalHistory') ? reportData.medicalHistory.length : 0,
       doctorVisits: reportConfig.dataTypes.includes('doctorVisits') ? reportData.doctorVisits.length : 0,
       goals: reportConfig.dataTypes.includes('goals') ? {
         total: reportData.goals.length,
@@ -312,7 +314,7 @@ export default function ReportsPage() {
     const filteredData: {
       bloodPressure?: BloodPressureData[];
       weight?: WeightData[];
-      bloodWork?: BloodWorkData[];
+      medicalHistory?: MedicalHistoryData[];
       doctorVisits?: DoctorVisitData[];
       goals?: GoalData[];
       medications?: MedicationData[];
@@ -331,9 +333,9 @@ export default function ReportsPage() {
       );
     }
 
-    if (reportConfig.dataTypes.includes('bloodWork')) {
-      filteredData.bloodWork = reportData.bloodWork.filter((record: BloodWorkData) => 
-        new Date(record.testDate) >= daysAgo
+    if (reportConfig.dataTypes.includes('medicalHistory')) {
+      filteredData.medicalHistory = reportData.medicalHistory.filter((record: MedicalHistoryData) => 
+        new Date(record.diagnosisDate) >= daysAgo
       );
     }
 
@@ -438,12 +440,20 @@ export default function ReportsPage() {
               notes: record.notes
             }))
           : [],
-        bloodWork: Array.isArray(content.data.bloodWork)
-          ? content.data.bloodWork.map((record: BloodWorkData) => ({
-              testName: record.testName,
-              testDate: record.testDate,
-              results: record.results,
-              category: record.category
+        medicalHistory: Array.isArray(content.data.medicalHistory)
+          ? content.data.medicalHistory.map((record: MedicalHistoryData) => ({
+              condition: record.condition,
+              diagnosisDate: record.diagnosisDate,
+              severity: record.severity,
+              status: record.status,
+              symptoms: record.symptoms,
+              treatments: record.treatments,
+              medications: record.medications,
+              doctorName: record.doctorName,
+              specialty: record.specialty,
+              notes: record.notes,
+              followUpRequired: record.followUpRequired,
+              followUpDate: record.followUpDate
             }))
           : [],
         doctorVisits: Array.isArray(content.data.doctorVisits)
@@ -551,10 +561,10 @@ export default function ReportsPage() {
       });
     }
 
-    // Add blood work data
-    if (content.data.bloodWork && Array.isArray(content.data.bloodWork)) {
-      (content.data.bloodWork as BloodWorkData[]).forEach((record) => {
-        csvContent += `Blood Work,${record.testDate},${record.testName},${record.category}\n`;
+    // Add medical history data
+    if (content.data.medicalHistory && Array.isArray(content.data.medicalHistory)) {
+      (content.data.medicalHistory as MedicalHistoryData[]).forEach((record) => {
+        csvContent += `Medical History,${record.diagnosisDate},${record.condition},${record.severity}\n`;
       });
     }
 
@@ -653,7 +663,7 @@ export default function ReportsPage() {
               {[
                 { key: 'bloodPressure', label: 'Blood Pressure', icon: <Activity className="h-4 w-4" /> },
                 { key: 'weight', label: 'Weight & BMI', icon: <Scale className="h-4 w-4" /> },
-                { key: 'bloodWork', label: 'Blood Work', icon: <FileText className="h-4 w-4" /> },
+                { key: 'medicalHistory', label: 'Medical History', icon: <FileText className="h-4 w-4" /> },
                 { key: 'doctorVisits', label: 'Doctor Visits', icon: <Stethoscope className="h-4 w-4" /> },
                 { key: 'goals', label: 'Health Goals', icon: <TrendingUp className="h-4 w-4" /> },
                 { key: 'medications', label: 'Medications', icon: <Pill className="h-4 w-4" /> }
@@ -765,12 +775,12 @@ export default function ReportsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Blood Work</CardTitle>
+            <CardTitle className="text-sm font-medium">Medical History</CardTitle>
             <FileText className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{reportData.bloodWork.length}</div>
-            <p className="text-xs text-muted-foreground">tests</p>
+            <div className="text-2xl font-bold">{reportData.medicalHistory.length}</div>
+            <p className="text-xs text-muted-foreground">records</p>
           </CardContent>
         </Card>
 

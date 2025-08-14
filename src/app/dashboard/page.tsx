@@ -24,6 +24,7 @@ import {
   Target,
   TrendingUp as TrendingUpIcon,
   Pill,
+  History,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -59,23 +60,20 @@ interface WeightRecord {
   notes?: string;
 }
 
-interface BloodWorkResult {
-  parameter: string;
-  value: number;
-  unit: string;
-  referenceRange: { min: number; max: number };
-  status: string;
-}
-
-interface BloodWorkRecord {
+interface MedicalHistoryEntry {
   _id: string;
-  testName: string;
-  testDate: string;
-  results: BloodWorkResult[];
-  labName: string;
+  condition: string;
+  diagnosisDate: Date;
+  severity: 'mild' | 'moderate' | 'severe';
+  status: 'active' | 'resolved' | 'chronic';
+  symptoms: string[];
+  treatments: string[];
+  medications: string[];
   doctorName?: string;
-  notes?: string;
-  category: string;
+  specialty?: string;
+  notes: string;
+  followUpRequired: boolean;
+  followUpDate?: Date;
 }
 
 interface DoctorVisit {
@@ -104,7 +102,7 @@ interface DashboardData {
   bloodPressureHistory: BloodPressureReading[];
   weight: WeightRecord | null;
   weightHistory: WeightRecord[];
-  bloodWork: BloodWorkRecord | null;
+  medicalHistory: MedicalHistoryEntry | null;
   doctorVisit: DoctorVisit | null;
   upcomingVisits: DoctorVisit[];
   recentActivity: RecentActivity[];
@@ -133,7 +131,7 @@ export default function DashboardPage() {
     bloodPressureHistory: [],
     weight: null,
     weightHistory: [],
-    bloodWork: null,
+    medicalHistory: null,
     doctorVisit: null,
     upcomingVisits: [],
     recentActivity: []
@@ -160,9 +158,9 @@ export default function DashboardPage() {
       const weightResponse = await fetch('/api/weight?limit=5');
       const weightData = weightResponse.ok ? await weightResponse.json() : { data: [] };
       
-      // Fetch latest blood work
-      const bwResponse = await fetch('/api/blood-work?limit=1');
-      const bwData = bwResponse.ok ? await bwResponse.json() : { data: [] };
+      // Fetch latest medical history
+      const mhResponse = await fetch('/api/medical-history?limit=1');
+      const mhData = mhResponse.ok ? await mhResponse.json() : { data: [] };
       
       // Fetch all doctor visits
       const dvResponse = await fetch('/api/doctor-visits');
@@ -182,7 +180,7 @@ export default function DashboardPage() {
         bloodPressureHistory: bpData.data || [],
         weight: weightData.data?.[0] || null,
         weightHistory: weightData.data || [],
-        bloodWork: bwData.data?.[0] || null,
+        medicalHistory: mhData.data?.[0] || null,
         doctorVisit: upcomingVisits[0] || null,
         upcomingVisits: upcomingVisits,
         recentActivity: []
@@ -786,11 +784,11 @@ export default function DashboardPage() {
             <TrendingUp className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            {dashboardData.bloodWork ? (
+            {dashboardData.medicalHistory ? (
               <>
-                <div className="text-2xl font-bold">{dashboardData.bloodWork.testName.split(' ')[0]}</div>
+                <div className="text-2xl font-bold">{dashboardData.medicalHistory.condition.split(' ')[0]}</div>
                 <p className="text-xs text-muted-foreground">
-                  {formatDate(dashboardData.bloodWork.testDate)}
+                  Diagnosed on: {new Date(dashboardData.medicalHistory.diagnosisDate).toLocaleDateString()}
                 </p>
               </>
             ) : (
@@ -936,18 +934,18 @@ export default function DashboardPage() {
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
-              <FileText className="h-5 w-5 text-blue-500" />
-              <span>Blood Work</span>
+              <History className="h-5 w-5 text-blue-500" />
+              <span>Medical History</span>
             </CardTitle>
             <CardDescription>
-              Log your latest lab results
+              Log your medical conditions and health events
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Link href="/dashboard/blood-work/new">
+            <Link href="/dashboard/medical-history/new">
               <Button className="w-full">
                 <Plus className="h-4 w-4 mr-2" />
-                Add Results
+                Add Entry
               </Button>
             </Link>
           </CardContent>
@@ -1099,13 +1097,13 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {dashboardData.bloodWork && (
+            {dashboardData.medicalHistory && (
               <div className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
                 <FileText className="h-5 w-5 text-blue-500" />
                 <div className="flex-1">
-                  <p className="text-sm font-medium">Blood Work Results</p>
+                  <p className="text-sm font-medium">Medical History Entry</p>
                   <p className="text-xs text-gray-500">
-                    {dashboardData.bloodWork.testName} • {formatDate(dashboardData.bloodWork.testDate)}
+                    {dashboardData.medicalHistory.condition} • Diagnosed on {new Date(dashboardData.medicalHistory.diagnosisDate).toLocaleDateString()}
                   </p>
                 </div>
                 <Badge variant="secondary">Recent</Badge>
@@ -1125,7 +1123,7 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {!dashboardData.bloodPressure && !dashboardData.bloodWork && !dashboardData.weight && (
+            {!dashboardData.bloodPressure && !dashboardData.medicalHistory && !dashboardData.weight && (
               <div className="text-center py-8">
                 <Activity className="h-12 w-12 mx-auto text-gray-400 mb-4" />
                 <p className="text-gray-500">No recent activity</p>

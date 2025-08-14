@@ -25,10 +25,10 @@ const dataTypes = [
     description: 'Blood pressure readings and trends'
   },
   {
-    id: 'bloodWork',
-    label: 'Blood Work',
+    id: 'medicalHistory',
+    label: 'Medical History',
     icon: FileText,
-    description: 'Lab results and test data'
+    description: 'Medical conditions and health history'
   },
   {
     id: 'weight',
@@ -48,7 +48,7 @@ export default function HealthDataShareModal({ open, onOpenChange }: HealthDataS
   const [recipientEmail, setRecipientEmail] = useState("");
   const [recipientName, setRecipientName] = useState("");
   const [message, setMessage] = useState("");
-  const [selectedDataTypes, setSelectedDataTypes] = useState<string[]>(['bloodPressure', 'bloodWork']);
+  const [selectedDataTypes, setSelectedDataTypes] = useState<string[]>(['bloodPressure', 'medicalHistory']);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleShare = async () => {
@@ -88,7 +88,7 @@ export default function HealthDataShareModal({ open, onOpenChange }: HealthDataS
         setRecipientEmail("");
         setRecipientName("");
         setMessage("");
-        setSelectedDataTypes(['bloodPressure', 'bloodWork']);
+        setSelectedDataTypes(['bloodPressure', 'medicalHistory']);
       } else {
         toast.error(result.error || "Failed to share health data");
       }

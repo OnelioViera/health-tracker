@@ -33,10 +33,11 @@ interface HealthDataSummary {
     total: number;
     trend: 'up' | 'down' | 'stable';
   };
-  bloodWork: {
+  medicalHistory: {
     latest?: {
+      condition: string;
+      status: string;
       date: string;
-      tests: number;
     };
     total: number;
     trend: 'up' | 'down' | 'stable';
@@ -71,7 +72,7 @@ interface DoctorVisit {
 export default function HealthDataPage() {
   const [summary, setSummary] = useState<HealthDataSummary>({
     bloodPressure: { total: 0, trend: 'stable' },
-    bloodWork: { total: 0, trend: 'stable' },
+    medicalHistory: { total: 0, trend: 'stable' },
     weight: { total: 0, trend: 'stable' },
     doctorVisits: { upcoming: 0, recent: 0, total: 0 }
   });
@@ -93,9 +94,9 @@ export default function HealthDataPage() {
       const weightResponse = await fetch('/api/weight?limit=1');
       const weightData = weightResponse.ok ? await weightResponse.json() : { data: [] };
       
-      // Fetch blood work summary
-      const bwResponse = await fetch('/api/blood-work?limit=1');
-      const bwData = bwResponse.ok ? await bwResponse.json() : { data: [] };
+      // Fetch medical history summary
+      const mhResponse = await fetch('/api/medical-history?limit=1');
+      const mhData = mhResponse.ok ? await mhResponse.json() : { data: [] };
       
       // Fetch doctor visits summary
       const dvResponse = await fetch('/api/doctor-visits');
@@ -125,6 +126,15 @@ export default function HealthDataPage() {
           total: bpData.data?.length || 0,
           trend: 'stable'
         },
+        medicalHistory: {
+          latest: mhData.data?.[0] ? {
+            condition: mhData.data[0].condition,
+            status: mhData.data[0].status,
+            date: mhData.data[0].diagnosisDate
+          } : undefined,
+          total: mhData.data?.length || 0,
+          trend: 'stable'
+        },
         weight: {
           latest: weightData.data?.[0] ? {
             weight: weightData.data[0].weight || 0,
@@ -132,14 +142,6 @@ export default function HealthDataPage() {
             date: weightData.data[0].date
           } : undefined,
           total: weightData.data?.length || 0,
-          trend: 'stable'
-        },
-        bloodWork: {
-          latest: bwData.data?.[0] ? {
-            date: bwData.data[0].date,
-            tests: bwData.data[0].tests?.length || 0
-          } : undefined,
-          total: bwData.data?.length || 0,
           trend: 'stable'
         },
         doctorVisits: {
@@ -268,25 +270,25 @@ export default function HealthDataPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Blood Work</CardTitle>
+            <CardTitle className="text-sm font-medium">Medical History</CardTitle>
             <CreditCard className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {summary.bloodWork.latest ? 
-                `${summary.bloodWork.latest.tests} tests` : 
+              {summary.medicalHistory.latest ? 
+                `${summary.medicalHistory.latest.condition} (${summary.medicalHistory.latest.status})` : 
                 'No data'
               }
             </div>
             <p className="text-xs text-gray-500">
-              {summary.bloodWork.latest ? 
-                `${summary.bloodWork.total} records` : 
+              {summary.medicalHistory.latest ? 
+                `${summary.medicalHistory.total} records` : 
                 'Start tracking'
               }
             </p>
-            {summary.bloodWork.latest && (
+            {summary.medicalHistory.latest && (
               <Badge variant="info" className="mt-2">
-                Latest: {new Date(summary.bloodWork.latest.date).toLocaleDateString()}
+                Latest: {new Date(summary.medicalHistory.latest.date).toLocaleDateString()}
               </Badge>
             )}
           </CardContent>
@@ -357,17 +359,17 @@ export default function HealthDataPage() {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <FileText className="h-5 w-5 text-blue-500" />
-              <span>Blood Work</span>
+              <span>Medical History</span>
             </CardTitle>
             <CardDescription>
-              Log your latest lab results
+              Log your latest medical conditions or diagnoses
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Link href="/dashboard/blood-work/new">
+            <Link href="/dashboard/medical-history/new">
               <Button className="w-full">
                 <Plus className="h-4 w-4 mr-2" />
-                Add Results
+                Add History
               </Button>
             </Link>
           </CardContent>
@@ -419,10 +421,10 @@ export default function HealthDataPage() {
                 Weight & BMI History
               </Button>
             </Link>
-            <Link href="/dashboard/blood-work">
+            <Link href="/dashboard/medical-history">
               <Button variant="outline" className="w-full justify-start">
                 <FileText className="h-4 w-4 mr-2" />
-                Blood Work Records
+                Medical History Records
               </Button>
             </Link>
             <Link href="/dashboard/doctor-visits">

@@ -35,7 +35,7 @@ import BackButton from "@/components/back-button";
 const initialEvents = [
   {
     _id: "1",
-    title: "Annual Physical",
+    title: "Annual Checkup",
     type: "appointment" as const,
     date: "2024-01-15",
     time: "10:00 AM",
@@ -43,7 +43,7 @@ const initialEvents = [
     location: "Medical Center",
     status: "upcoming" as const,
     color: "blue",
-    notes: "Annual checkup with blood work",
+    notes: "Annual checkup and medical history review",
     category: "appointment",
     isCompleted: false
   },
@@ -61,13 +61,13 @@ const initialEvents = [
   },
   {
     _id: "3",
-    title: "Blood Work Results",
+    title: "Medical History Review",
     type: "test" as const,
     date: "2024-01-10",
     time: "2:00 PM",
     status: "completed" as const,
     color: "purple",
-    notes: "Complete blood count results review",
+    notes: "Review of medical conditions and treatment plans",
     category: "test",
     isCompleted: true
   },

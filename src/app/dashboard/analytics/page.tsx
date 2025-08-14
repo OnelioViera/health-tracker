@@ -45,18 +45,20 @@ interface WeightData {
   notes?: string;
 }
 
-interface BloodWorkData {
+interface MedicalHistoryData {
   _id: string;
-  testName: string;
-  testDate: string;
-  results: Array<{
-    parameter: string;
-    value: number;
-    unit: string;
-    referenceRange: { min: number; max: number };
-    status: string;
-  }>;
-  category: string;
+  condition: string;
+  diagnosisDate: Date;
+  severity: 'mild' | 'moderate' | 'severe';
+  status: 'active' | 'resolved' | 'chronic';
+  symptoms: string[];
+  treatments: string[];
+  medications: string[];
+  doctorName?: string;
+  specialty?: string;
+  notes: string;
+  followUpRequired: boolean;
+  followUpDate?: Date;
 }
 
 interface DoctorVisitData {
@@ -93,7 +95,7 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [bloodPressureData, setBloodPressureData] = useState<BloodPressureData[]>([]);
   const [weightData, setWeightData] = useState<WeightData[]>([]);
-  const [bloodWorkData, setBloodWorkData] = useState<BloodWorkData[]>([]);
+  const [medicalHistoryData, setMedicalHistoryData] = useState<MedicalHistoryData[]>([]);
   const [doctorVisitsData, setDoctorVisitsData] = useState<DoctorVisitData[]>([]);
   const [healthMetrics, setHealthMetrics] = useState<HealthMetrics[]>([]);
   const [insights, setInsights] = useState<Insight[]>([]);
@@ -101,28 +103,28 @@ export default function AnalyticsPage() {
   const fetchAllData = useCallback(async () => {
     setLoading(true);
     try {
-      const [bpResponse, weightResponse, bloodWorkResponse, doctorVisitsResponse] = await Promise.all([
+      const [bpResponse, weightResponse, medicalHistoryResponse, doctorVisitsResponse] = await Promise.all([
         fetch('/api/blood-pressure'),
         fetch('/api/weight'),
-        fetch('/api/blood-work'),
+        fetch('/api/medical-history'),
         fetch('/api/doctor-visits')
       ]);
 
       const bpData = await bpResponse.json();
       const weightData = await weightResponse.json();
-      const bloodWorkData = await bloodWorkResponse.json();
+      const medicalHistoryData = await medicalHistoryResponse.json();
       const doctorVisitsData = await doctorVisitsResponse.json();
 
       setBloodPressureData(bpData.data || []);
       setWeightData(weightData.data || []);
-      setBloodWorkData(bloodWorkData.data || []);
+      setMedicalHistoryData(medicalHistoryData.data || []);
       setDoctorVisitsData(doctorVisitsData.data || []);
 
       // Calculate health metrics from real data
       calculateHealthMetrics(bpData.data || [], weightData.data || []);
       
       // Generate insights from real data
-      generateInsights(bpData.data || [], weightData.data || [], bloodWorkData.data || [], doctorVisitsData.data || []);
+      generateInsights(bpData.data || [], weightData.data || [], medicalHistoryData.data || [], doctorVisitsData.data || []);
 
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -226,7 +228,7 @@ export default function AnalyticsPage() {
     setHealthMetrics(metrics);
   };
 
-  const generateInsights = (bpData: BloodPressureData[], weightData: WeightData[], bloodWorkData: BloodWorkData[], doctorVisitsData: DoctorVisitData[]) => {
+  const generateInsights = (bpData: BloodPressureData[], weightData: WeightData[], medicalHistoryData: MedicalHistoryData[], doctorVisitsData: DoctorVisitData[]) => {
     const insights: Insight[] = [];
 
     // Blood Pressure Insights
@@ -301,26 +303,16 @@ export default function AnalyticsPage() {
       });
     }
 
-    // Blood Work Insights
-    if (bloodWorkData.length > 0) {
-      const latest = bloodWorkData[0];
-      const abnormalResults = latest.results.filter(result => result.status !== 'normal');
-      
-      if (abnormalResults.length > 0) {
+    // Medical History Insights
+    if (medicalHistoryData.length > 0) {
+      const latest = medicalHistoryData[0];
+      if (latest.status === 'active' && latest.followUpRequired) {
         insights.push({
-          title: "Blood Work Results",
-          description: `${abnormalResults.length} abnormal result(s) in your latest ${latest.testName}.`,
+          title: "Medical Follow-up Required",
+          description: `You have an active medical condition requiring follow-up.`,
           type: "warning",
           icon: AlertTriangle,
           color: "orange"
-        });
-      } else {
-        insights.push({
-          title: "Blood Work Results",
-          description: `All results from your ${latest.testName} are within normal range.`,
-          type: "positive",
-          icon: CheckCircle,
-          color: "green"
         });
       }
     }
@@ -511,8 +503,8 @@ export default function AnalyticsPage() {
                     <div className="text-gray-600">Weight Entries</div>
                   </div>
                   <div className="text-center p-2 bg-gray-50 rounded">
-                    <div className="font-semibold">{bloodWorkData.length}</div>
-                    <div className="text-gray-600">Blood Work Tests</div>
+                    <div className="font-semibold">{medicalHistoryData.length}</div>
+                    <div className="text-gray-600">Medical History</div>
                   </div>
                   <div className="text-center p-2 bg-gray-50 rounded">
                     <div className="font-semibold">{doctorVisitsData.length}</div>

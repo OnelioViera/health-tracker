@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Heart, Activity, Stethoscope, TrendingUp, Shield, Zap } from "lucide-react";
+import { Heart, Activity, Stethoscope, TrendingUp, Shield, Zap, History } from "lucide-react";
 
 export default function HomePage() {
   return (
@@ -38,7 +38,7 @@ export default function HomePage() {
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600"> Health</span>
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Track your blood pressure, blood work results, doctor visits, and more with our modern, 
+            Track your blood pressure, medical history, doctor visits, and more with our modern, 
             comprehensive health tracking app designed for your wellness journey.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -79,11 +79,11 @@ export default function HomePage() {
           <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
             <CardHeader>
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                <TrendingUp className="h-6 w-6 text-blue-600" />
+                <History className="h-6 w-6 text-blue-600" />
               </div>
-              <CardTitle>Blood Work Results</CardTitle>
+              <CardTitle>Medical History</CardTitle>
               <CardDescription>
-                Record and monitor your lab results with reference ranges and status indicators
+                Record and monitor your medical conditions, symptoms, and treatment plans
               </CardDescription>
             </CardHeader>
           </Card>

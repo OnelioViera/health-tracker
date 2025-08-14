@@ -16,6 +16,7 @@ import {
   Scale,
   Target,
   Pill,
+  History,
 } from "lucide-react";
 
 const navigation = [
@@ -30,9 +31,9 @@ const navigation = [
     icon: Activity,
   },
   {
-    name: "Blood Work",
-    href: "/dashboard/blood-work",
-    icon: CreditCard,
+    name: "Medical History",
+    href: "/dashboard/medical-history",
+    icon: History,
   },
   {
     name: "Weight & Body",
